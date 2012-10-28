@@ -3,7 +3,6 @@ python:
 - "2.6"
 - "2.7"
 install:
-- python bootstrap.py
-- bin/buildout install tox
-script: bin/tox
+- pip install tox
+script: tox
 
