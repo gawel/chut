@@ -5,5 +5,5 @@ python:
 install:
 - python bootstrap.py
 - bin/buildout install tox
-script: bin/nosetests tests
+script: bin/tox
 
