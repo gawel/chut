@@ -104,7 +104,8 @@ You can use a python string as input::
     >>> print(ch.stdin(b'gawel\nfoo') | ch.grep('gawel'))
     gawel
 
-The input can be a file but the file is not streamed by ``stdin()``
+The input can be a file but the file is not streamed by ``stdin()``.
+Notice that the file must be open in binary mode (``rb``).
 
 Output
 ======
@@ -122,6 +123,7 @@ And can use some redirection::
     >>> chut_stdout > 'chut.txt'
     >>> print(ch.cat('chut.txt'))
     Chut rocks!
+
     >>> chut_stdout >> 'chut.txt'
     >>> print(ch.cat('chut.txt'))
     Chut rocks!
@@ -170,7 +172,7 @@ Notice that a ssh command always use a shell.
 Debugging
 ==========
 
-You can print you pipe::
+You can print your pipe::
 
     >>> ch.cat('README.txt') | check_chut
     'cat README.txt | check_chut'
@@ -179,5 +181,7 @@ You can also activate logging::
 
     >>> import logging
     >>> logging.basicConfig(level=logging.DEBUG)
+    >>> log = logging.getLogger('chut')
+    >>> # set level/handler
 
 Cheers.
