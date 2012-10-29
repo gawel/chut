@@ -3,5 +3,8 @@ python:
  - "2.6"
  - "2.7"
  - "3.2"
+ - "3.3"
+before_install:
+ - "if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then sudo apt-get install python-nose; fi"
 script: nosetests
 
