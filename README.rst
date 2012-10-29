@@ -2,6 +2,9 @@
 Chut
 ====
 
+.. image:: https://secure.travis-ci.org/gawel/chut.png
+   :align: right
+
 Chut is a small tool to help you to interact with shell pipes.
 
 Basically it will help to write some shell script in python
