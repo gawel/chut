@@ -8,7 +8,7 @@ Basically it will help to write some shell script in python
 
 This is more like a toy than a real tool but... It may be useful sometimes.
 
-It's tested under py2.6 and py3.x:
+It's `tested <https://travis-ci.org/gawel/chut>`_ with py2.6+ and py3.2+:
 
 .. image:: https://secure.travis-ci.org/gawel/chut.png
 
