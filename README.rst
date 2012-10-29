@@ -27,7 +27,8 @@ Then run what you want::
     >>> print(ch.cat('README.rst') | ch.grep('Chut') | ch.head("-n1"))
     Chut
 
-When I said what you want it's mean that ``ch.whatyouwant`` will call a binary named ``whatyouwant``
+When I said what you want it's mean that ``ch.whatyouwant`` will call a binary
+named ``whatyouwant``
 
 Let's check if an error occurred with ``whatyouwant``::
 
@@ -78,10 +79,20 @@ You can also extract parts of the pipe using slices::
     >>> chut[1:]
     'grep chut'
 
+Sudo
+====
+
+You can for sure use sudo::
+
+    >>> from chut import sudo
+    >>> sudo.ls() | sudo.grep('chut')
+    'sudo -s ls | sudo -s grep chut'
+
 Use python !!
 =============
 
-Finally you can use some python code ad the end of the pipe (and only at the end)::
+Finally you can use some python code ad the end of the pipe (and only at the
+end)::
 
     >>> @ch.wraps
     ... def check_chut(stdin):
@@ -105,7 +116,11 @@ You can use a python string as input::
     gawel
 
 The input can be a file but the file is not streamed by ``stdin()``.
-Notice that the file must be open in binary mode (``rb``).
+Notice that the file must be open in binary mode (``rb``)::
+
+    >>> print(ch.stdin(open('README.rst', 'rb'))
+    ...               | ch.grep('Chut') | ch.head('-n1'))
+    Chut
 
 Output
 ======
@@ -174,8 +189,8 @@ Debugging
 
 You can print your pipe::
 
-    >>> ch.cat('README.txt') | check_chut
-    'cat README.txt | check_chut'
+    >>> print(repr(ch.cat('README.txt') | check_chut))
+    'cat README.txt | check_chut()'
 
 You can also activate logging::
 

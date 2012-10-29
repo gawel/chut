@@ -43,3 +43,9 @@ class Chut(unittest.TestCase):
                          str(ch.stdin(bcontent) | ch.cat('-')))
         self.assertEqual(content,
                          str(ch.stdin(open(__file__, 'rb')) | ch.cat('-')))
+
+    def test_stdin2(self):
+        head = str(ch.stdin(open(__file__, 'rb'))
+                   | ch.cat('-')
+                   | ch.head('-n1'))
+        self.assertTrue(len(head) > 1, head)

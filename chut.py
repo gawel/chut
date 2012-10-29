@@ -9,8 +9,12 @@ from contextlib import contextmanager
 
 log = logging.getLogger('chut')
 
+SUDO = '/usr/bin/sudo'
+
 
 class Pipe(object):
+    _pipe = True
+    _chut = None
 
     def __init__(self, args='', encoding='utf-8', **kwargs):
         self.args = args
@@ -53,40 +57,51 @@ class Pipe(object):
 
     @property
     def stdout(self):
+        p = None
         self.processes = []
         stdin = sys.stdin
         for cmd in self.commands:
-            if not isinstance(cmd, (Stdin, PyPipe)):
-                encoding = cmd.encoding
+            if isinstance(cmd, Stdin):
+                stdin = cmd._stdout
+            elif isinstance(cmd, PyPipe):
+                cmd.stdin = p.stdout
+                stdin = cmd._stdout
+            else:
                 binary = cmd.__class__.__name__
+
                 for dirname in ('/usr/bin', '/usr/sbin'):
                     filename = os.path.join(dirname, binary)
                     if os.path.isfile(filename):
                         binary = filename
                 args = [binary] + cmd.args.split()
+
+                if self._chut == 'sudo':
+                    if not os.path.isfile(SUDO):
+                        raise OSError('sudo is not installed')
+                    args[0:0] = [SUDO, '-s']
+                    cmd.kwargs['shell'] = True
+
                 if cmd.kwargs.get('shell', False):
                     args = ' '.join(args)
+
                 kwargs = dict(
                     stdin=stdin, stderr=subprocess.PIPE,
                     stdout=subprocess.PIPE)
                 kwargs.update(cmd.kwargs)
+
                 log.debug('Running Popen(%r, **%r)', args, kwargs)
                 try:
                     p = subprocess.Popen(args, **kwargs)
                 except OSError:
-                    if isinstance(args, list):
-                        args = ' '.join(args)
-                    log.debug('Error while running Popen(%r, **%r)',
-                              args, kwargs)
-                    raise OSError(args)
+                    self._raise(args, kwargs)
+
+                if self._chut == 'sudo':
+                    p.wait()
+                    if p.returncode != 0:
+                        self._raise(args, kwargs)
+
                 self.processes.append(p)
                 stdin = p.stdout
-            elif isinstance(cmd, Stdin):
-                continue
-            else:
-                cmd.encoding = encoding
-                cmd.stdin = p.stdout
-                stdin = cmd._stdout
         return stdin
 
     def run(self):
@@ -130,27 +145,34 @@ class Pipe(object):
 
     def __or__(self, other):
         other = deepcopy(other)
-        previous = other
-        while previous.previous is not None:
-            previous = previous.previous
+        first = other.commands[0]
         if isinstance(self, Stdin):
-            previous.previous = self
+            first.previous = self
         else:
-            previous.previous = deepcopy(self)
+            try:
+                previous = deepcopy(self)
+            except TypeError:
+                previous = self
+            first.previous = previous
         return other
 
     def __repr__(self):
         cmds = []
         for cmd in self.commands:
-            s = ''
-            if cmd.kwargs.get('shell'):
-                s += 'sh '
-            s += '%s ' % cmd.__class__.__name__
-            if cmd.args:
-                s += '%s ' % cmd.args
+            if isinstance(cmd, Stdin):
+                s = 'stdin'
+            elif isinstance(cmd, PyPipe):
+                s = '%s()' % cmd.__class__.__name__
+            else:
+                s = ''
+                if cmd._chut == 'sudo':
+                    s += 'sudo -s '
+                elif cmd.kwargs.get('shell'):
+                    s += 'sh '
+                s += '%s ' % cmd.__class__.__name__
+                if cmd.args:
+                    s += '%s ' % cmd.args
             cmds.append(s.strip())
-        if len(cmds) == 1:
-            return repr(str(cmds[0]))
         return repr(str(' | '.join(cmds)))
 
     def _order(self, cmds):
@@ -172,32 +194,38 @@ class Pipe(object):
                     raise OSError(self.stderr)
         return None
 
+    def _raise(self, args, kwargs):
+        if isinstance(args, list):
+            args = ' '.join(args)
+        log.debug('Error while running Popen(%r, **%r)',
+                  args, kwargs)
+        raise OSError(args)
+
 
 class Stdin(Pipe):
-
-    _pipe = True
 
     def __init__(self, value):
         super(Stdin, self).__init__()
         self.value = value
+        self._stdin = None
 
-    def __or__(self, other):
-        other = super(Stdin, self).__or__(other)
+    @property
+    def _stdout(self):
         if hasattr(self.value, 'read'):
             r = self.value
-            r.seek(0)
         else:
+            value = self.value
             r, w = os.pipe()
             fd = os.fdopen(w, 'wb')
-            fd.write(self.value)
+            fd.write(value)
             fd.close()
-        other.kwargs['stdin'] = r
-        return other
+        return r
+
+    def __deepcopy__(self, other):
+        return self.__class__(self.value)
 
 
 class PyPipe(Pipe):
-
-    _pipe = True
 
     @property
     def _stdout(self):
@@ -205,11 +233,12 @@ class PyPipe(Pipe):
 
 
 class Chut(object):
-    __file__ = __file__
-    __name__ = __name__
     not_piped = ['rm', 'mkdir', 'cp', 'touch', 'mv', 'scp', 'rsync']
     not_piped = sorted([str(c) for c in not_piped])
-    _cmds = {}
+
+    def __init__(self, name):
+        self.__name__ = name
+        self._cmds = {}
 
     def wraps(self, func):
         return type(func.__name__, (PyPipe,), {'func': staticmethod(func)})()
@@ -241,21 +270,15 @@ class Chut(object):
 
     def stdin(self, value):
         return Stdin(value)
-        if hasattr(value, 'read'):
-            if hasattr(value, 'seek'):
-                value.seek(0)
-            value = value.read()
-        value = value.replace('\n', r'\n')
-        return self.echo('"%s"' % value, shell=True)
 
     def __getattr__(self, attr):
         attr = str(attr)
         if attr not in self._cmds:
+            kw = dict(_chut=self.__name__, _pipe=True)
             if attr in self.not_piped:
-                kw = dict(_pipe=False)
-            else:
-                kw = dict(_pipe=True)
+                kw['_pipe'] = False
             self._cmds[attr] = type(attr, (Pipe,), kw)
         return self._cmds[attr]
 
-ch = Chut()
+ch = Chut('ch')
+sudo = Chut('sudo')
