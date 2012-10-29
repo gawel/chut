@@ -12,6 +12,8 @@ It's tested under py2.6 and py3.x:
 
 .. image:: https://secure.travis-ci.org/gawel/chut.png
 
+.. contents::
+
 Installation
 ============
 
