@@ -211,10 +211,15 @@ class Stdin(Pipe):
 
     @property
     def _stdout(self):
-        if hasattr(self.value, 'read'):
+        if hasattr(self.value, 'seek'):
+            self.value.seek(0)
+        if hasattr(self.value, 'fileno'):
             r = self.value
         else:
-            value = self.value
+            if hasattr(self.value, 'read'):
+                value = self.value.read()
+            else:
+                value = self.value
             r, w = os.pipe()
             fd = os.fdopen(w, 'wb')
             fd.write(value)
