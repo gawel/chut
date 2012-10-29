@@ -11,7 +11,7 @@ This is more like a toy than a real tool but... It may be useful sometimes.
 Installation
 ============
 
-::
+Using pip::
 
     $ pip install chut
 
