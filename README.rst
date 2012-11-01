@@ -10,6 +10,9 @@ It's `tested <https://travis-ci.org/gawel/chut>`_ with py2.6+ and py3.2+:
 
 .. image:: https://secure.travis-ci.org/gawel/chut.png
 
+Full documentation can be found
+`here <https://chut.readthedocs.org/en/latest/>`_
+
 Installation
 ============
 
@@ -17,7 +20,7 @@ Using pip::
 
     $ pip install chut
 
-It's also recommended to install docopt::
+It's also recommended to install `docopt <https://github.com/docopt/docopt>`_::
 
     $ pip install docopt
 
