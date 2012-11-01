@@ -4,6 +4,7 @@ import os
 import sys
 import types
 import logging
+import functools
 import posixpath
 import subprocess
 from copy import deepcopy
@@ -12,6 +13,14 @@ from contextlib import contextmanager
 log = logging.getLogger('chut')
 
 SUDO = '/usr/bin/sudo'
+
+
+def console_script(func):
+    @functools.wraps(func)
+    def wrapper():
+        from docopt import docopt
+        sys.exit(func(docopt(func.__doc__)))
+    return wrapper
 
 
 def check_sudo():
@@ -95,7 +104,7 @@ class Pipe(object):
     @property
     def stderr(self):
         if self._stderr is None:
-            stderr = [p.stderr.read() for p in self.processes]
+            stderr = [p.stderr.read() for p in self.processes if p.stderr]
             output = b'\n'.join(stderr).strip()
             self._stderr = output.decode(self.encoding)
         return self._stderr
