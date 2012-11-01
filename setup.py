@@ -4,7 +4,7 @@ version = '0.3'
 
 setup(name='chut',
       version=version,
-      description="Small tool to interact with shell pipes",
+      description="Small tool to interact with shell and pipes",
       long_description=open('README.rst').read(),
       classifiers=[
           'Intended Audience :: Developers',
