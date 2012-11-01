@@ -43,32 +43,46 @@ Let's check if an error occurred with ``whatyouwant``::
     ...
     OSError: whatyouwant
 
-But an error can also occured if the binary exist::
+About imports
+=============
 
-    >>> cmd = ch.cat('whatyouwant')
-    >>> output = str(cmd)
-    >>> print(cmd.returncodes)
-    [1]
-    >>> print(cmd.stderr)
-    cat: whatyouwant: No such file or directory
+You can import ch and sudo::
+
+    >>> from chut import ch, sudo
+
+But you can also import some specific commands::
+
+    >>> from chut import cat, grep, gzip, gunzip
+    >>> from chut.sudo import ifconfig
 
 The pipe context manager
 ========================
 
+An error can occur if the binary exist::
+
+    >>> cmd = ch.cat('whatyouwant')
+    >>> output = str(cmd)
+    >>> output.succeeded
+    False
+    >>> print(output.stderr)
+    cat: whatyouwant: No such file or directory
+
 A context manager can help you to check for some errors::
 
-    >>> with ch.pipe(ch.cat('fff') | ch.grep('fff')) as p: # doctest: +ELLIPSIS
+    >>> with ch.pipe(cat('fff') | grep('fff')) as p: # doctest: +ELLIPSIS
     ...    print(p)
     Traceback (most recent call last):
     ...
     OSError: cat: fff: No such file or directory
+
+Basically it checks return codes at the end of the pipe
 
 Use predefined pipe
 ====================
 
 Define an pipe::
 
-    >>> chut = ch.cat('README.rst') | ch.grep('chut')
+    >>> chut = cat('README.rst') | grep('chut')
 
 And use it::
 
@@ -85,6 +99,32 @@ You can also extract parts of the pipe using slices::
     >>> chut[1:]
     'grep chut'
 
+SSH
+===
+
+The ssh command take a host first and is gziped by default::
+
+    >>> from chut import ssh
+    >>> srv1 = ssh('gawel@srv')
+    >>> srv1.ls('~')
+    'ssh gawel@srv ls ~'
+
+For example you can backup your mysql database locally::
+
+    >>> srv1.mysqldump('db | gzip') | gzip
+    "ssh gawel@srv 'mysqldump db | gzip' | gzip"
+
+Or on another server::
+
+    >>> srv2 = ssh('gawel@srv2')
+    >>> srv1(ch.mysqldump('db') | gzip | srv2('gunzip > ~/backup.db'))
+    'ssh gawel@srv "mysqldump db | gzip | ssh gawel@srv2 \'gunzip > ~/backup.db\'"'
+
+You can use your ssh instance to get some remote file::
+
+    >>> ch.rsync(srv1.join('~/p0rn'), '.', pipe=True)
+    'rsync gawel@srv:~/p0rn .'
+
 Sudo
 ====
 
@@ -93,6 +133,23 @@ You can for sure use sudo::
     >>> from chut import sudo
     >>> sudo.ls() | sudo.grep('chut')
     'sudo -s ls | sudo -s grep chut'
+
+Sudo wont work with ssh except if it does not require a password
+
+Testing
+=======
+
+You can use the test command::
+
+    >>> from chut import test
+
+    >>> # test -f chut.py
+    >>> bool(test.f('chut.py'))
+    True
+
+    >>> # test -x chut.py
+    >>> if test.x('chut.py'):
+    ...     print('Chut.py is executable')
 
 Use python !!
 =============
@@ -107,7 +164,7 @@ end)::
     ...             yield b'Chut rocks!\n'
     ...             break
 
-    >>> with ch.pipe(ch.cat('README.rst') | check_chut) as cmd:
+    >>> with ch.pipe(cat('README.rst') | check_chut) as cmd:
     ...     for line in cmd:
     ...         print(line)
     Chut rocks!
@@ -118,14 +175,14 @@ Input
 
 You can use a python string as input::
 
-    >>> print(ch.stdin(b'gawel\nfoo') | ch.grep('gawel'))
+    >>> print(ch.stdin(b'gawel\nfoo') | grep('gawel'))
     gawel
 
 The input can be a file but the file is not streamed by ``stdin()``.
 Notice that the file must be open in binary mode (``rb``)::
 
     >>> print(ch.stdin(open('README.rst', 'rb'))
-    ...               | ch.grep('Chut') | ch.head('-n1'))
+    ...               | grep('Chut') | ch.head('-n1'))
     Chut
 
 Output
@@ -133,20 +190,25 @@ Output
 
 You can get the output as string::
 
-    >>> output = str(ch.cat('README.rst') | check_chut)
+    >>> output = str(cat('README.rst') | check_chut)
+    >>> output = (cat('README.rst') | check_chut)()
 
 As an iterator (iterate over each lines of the output)::
 
-    >>> chut_stdout = ch.cat('README.rst') | check_chut
+    >>> chut_stdout = cat('README.rst') | check_chut
 
 And can use some redirection::
 
-    >>> chut_stdout > 'chut.txt'
-    >>> print(ch.cat('chut.txt'))
+    >>> ret = chut_stdout > 'chut.txt'
+    >>> ret.succeeded
+    True
+    >>> print(cat('chut.txt'))
     Chut rocks!
 
-    >>> chut_stdout >> 'chut.txt'
-    >>> print(ch.cat('chut.txt'))
+    >>> ret = chut_stdout >> 'chut.txt'
+    >>> ret.succeeded
+    True
+    >>> print(cat('chut.txt'))
     Chut rocks!
     Chut rocks!
 
@@ -155,47 +217,37 @@ Parentheses are needed with ``>>`` only (due to the way the python operator work
 ..
 
     >>> ch.rm('-f chut.txt')
-    'sh rm -f chut.txt'
+    'rm -f chut.txt'
 
 Exceptions
 ==========
 
-By default a command do not launch a shell. But if you need you can use one::
-
-    >>> ch.ls(shell=True)
-    'sh ls'
-
-    >>> ch.ls(sh=True)
-    'sh ls'
-
-By default a command is piped. But you can avoid this::
-
-    >>> ch.ls(pipe=False)
-    'ls'
+The ``cd`` command use python ``os.chdir()``
 
 Some commands do not use a pipe by default. This mean that they are executed immediately::
 
     >>> ch.not_piped
     ['cp', 'mkdir', 'mv', 'rm', 'rsync', 'scp', 'touch']
 
-The ssh command take a host first and is gziped by default::
+By default a command is piped. But you can avoid this::
 
-    >>> ch.ssh('sandy', 'ls ~')
-    'sh ssh sandy "ls ~ | gzip" | gunzip'
+    >>> ch.ls(pipe=False)
+    'ls'
 
-But you can avoid gzip::
+By default a command do not launch a shell. But if you need you can use one::
 
-    >>> ch.ssh('sandy', 'ls ~', gzip=False)
-    'sh ssh sandy "ls ~"'
+    >>> ch.ls(shell=True)
+    'ls'
 
-Notice that a ssh command always use a shell.
+    >>> ch.ls(sh=True)
+    'ls'
 
 Debugging
 ==========
 
 You can print your pipe::
 
-    >>> print(repr(ch.cat('README.txt') | check_chut))
+    >>> print(repr(cat('README.txt') | check_chut))
     'cat README.txt | check_chut()'
 
 You can also activate logging::
