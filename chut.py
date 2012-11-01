@@ -244,8 +244,9 @@ class Pipe(object):
         other = cmds[-1]
         return other
 
-    def __nonzero__(self):
+    def __bool__(self):
         return not self.failed
+    __nonzero__ = __bool__
 
     def __repr__(self):
         return repr(self.commands_line)
