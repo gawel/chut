@@ -79,6 +79,7 @@ class Pipe(object):
 
     @property
     def returncodes(self):
+        """A list of return codes of all processes launched by the pipe"""
         for p in self.processes:
             p.wait()
         codes = [p.poll() for p in self.processes]
@@ -88,11 +89,13 @@ class Pipe(object):
 
     @property
     def failed(self):
+        """True if one or more process failed"""
         output = self.__call__()
         return output.failed
 
     @property
     def succeeded(self):
+        """True if all processes succeeded"""
         output = self.__call__()
         if output.succeeded:
             if output:
@@ -103,6 +106,7 @@ class Pipe(object):
 
     @property
     def stderr(self):
+        """combined stderr of all processes"""
         if self._stderr is None:
             stderr = [p.stderr.read() for p in self.processes if p.stderr]
             output = b'\n'.join(stderr).strip()
@@ -162,6 +166,7 @@ class Pipe(object):
 
     @property
     def stdout(self):
+        """standard output of the pipe. A file descriptor or an iteraror"""
         p = None
         self.processes = []
         self._stderr = None
@@ -296,6 +301,7 @@ class Pipe(object):
 
 
 class Stdin(Pipe):
+    """Used to infect some data in the pipe"""
 
     def __init__(self, value):
         super(Stdin, self).__init__()
@@ -324,6 +330,13 @@ class Stdin(Pipe):
 
 
 class Stdout(str):
+    """A string with extra attributes:
+
+    - succeeded
+    - failed
+    - stdout
+    - stderr
+    """
 
     @property
     def stdout(self):
@@ -399,6 +412,7 @@ class Chut(Base):
 
 
 class Command(Base):
+    """A command (like test)"""
 
     def __getattr__(self, attr):
         attr = str(attr)
@@ -413,6 +427,7 @@ class Command(Base):
 
 
 class SSH(Base):
+    """A ssh server"""
 
     def join(self, *args):
         return '%s%s' % (self, posixpath.join(*args))
@@ -431,6 +446,7 @@ class SSH(Base):
 
 
 class ModuleWrapper(types.ModuleType):
+    """wrap chut and add extra attributes from classes"""
 
     def __init__(self, mod, chut, name):
         self.__name__ = name

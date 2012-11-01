@@ -21,7 +21,7 @@ setup(name='chut',
       url='https://github.com/gawel/chut/',
       license='MIT',
       py_modules=['chut'],
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages(exclude=['docs', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
       )

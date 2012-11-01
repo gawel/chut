@@ -49,3 +49,6 @@ class Chut(unittest.TestCase):
                    | ch.cat('-')
                    | ch.head('-n1'))
         self.assertTrue(len(head) > 1, head)
+
+    def test_raise(self):
+        self.assertRaises(OSError, str, ch.zero_command())
