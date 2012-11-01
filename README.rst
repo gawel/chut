@@ -2,7 +2,7 @@
 Chut
 ====
 
-Chut is a small tool to help you to interact with shell pipes.
+Chut is a small tool to help you to interact with shell pipes and commands.
 
 Basically it will help to write some shell script in python
 
@@ -154,8 +154,7 @@ You can use the test command::
 Use python !!
 =============
 
-Finally you can use some python code ad the end of the pipe (and only at the
-end)::
+You can use some python code ad the end of the pipe (and only at the end)::
 
     >>> @ch.wraps
     ... def check_chut(stdin):
@@ -212,7 +211,10 @@ And can use some redirection::
     Chut rocks!
     Chut rocks!
 
-Parentheses are needed with ``>>`` only (due to the way the python operator work)
+Parentheses are needed with ``>>`` (due to the way the python operator work)::
+
+    cat('README.rst') | grep >> 'chut.txt' # wont work
+    (cat('README.rst') | grep) >> 'chut.txt' # work
 
 ..
 

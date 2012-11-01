@@ -155,6 +155,7 @@ class Pipe(object):
     def stdout(self):
         p = None
         self.processes = []
+        self._stderr = None
         stdin = sys.stdin
         cmds = self.commands
 
