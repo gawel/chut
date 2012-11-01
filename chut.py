@@ -263,6 +263,9 @@ class Pipe(object):
         return not self.failed
     __nonzero__ = __bool__
 
+    def __deepcopy__(self, *args):
+        return self.__class__(*self.args, **self.kwargs)
+
     def __repr__(self):
         return repr(self.commands_line)
 
@@ -325,7 +328,7 @@ class Stdin(Pipe):
             fd.close()
         return r
 
-    def __deepcopy__(self, other):
+    def __deepcopy__(self, *args):
         return self.__class__(self.value)
 
 
@@ -348,6 +351,10 @@ class PyPipe(Pipe):
     @property
     def iter_stdout(self):
         return self.func(self.stdin)
+
+    def __deepcopy__(self, *args):
+        self._stderr = None
+        return self
 
 
 class Base(object):
