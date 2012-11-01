@@ -2,26 +2,18 @@
 Chut's basics
 =============
 
-
-
-You can use the test command::
-
-    >>> from chut import test
-
-    >>> # test -f chut.py
-    >>> bool(test.f('chut.py'))
-    True
-
-    >>> # test -x chut.py
-    >>> if test.x('chut.py'):
-    ...     print('Chut.py is executable')
-
 About imports
 =============
 
-You can import ch and sudo::
+You can import chut and use commands::
 
-    >>> from chut import ch, sudo
+    >>> import chut as sh
+    >>> sh.ls()
+    'ls'
+
+You can import sudo::
+
+    >>> from chut import sudo
 
 But you can also import some specific commands::
 
@@ -36,21 +28,36 @@ The ``cd`` command use python ``os.chdir()``
 
 Some commands do not use a pipe by default. This mean that they are executed immediately::
 
-    >>> ch.not_piped
+    >>> sh.not_piped
     ['cp', 'mkdir', 'mv', 'rm', 'rsync', 'scp', 'touch']
 
 By default a command is piped. But you can avoid this::
 
-    >>> ch.ls(pipe=False)
+    >>> sh.ls(pipe=False)
     'ls'
 
-By default a command do not launch a shell. But if you need you can use one::
+By default a command do not use a shell. But if you need you can use one::
 
-    >>> ch.ls(shell=True)
+    >>> sh.ls(shell=True)
     'ls'
 
-    >>> ch.ls(sh=True)
+    >>> sh.ls(sh=True)
     'ls'
+
+The test command
+================
+
+You can use the test command::
+
+    >>> from chut import test
+
+    >>> # test -f chut.py
+    >>> bool(test.f('chut.py'))
+    True
+
+    >>> # test -x chut.py
+    >>> if test.x('chut.py'):
+    ...     print('Chut.py is executable')
 
 Debugging
 ==========

@@ -4,7 +4,8 @@ Welcome to chut's documentation!
 
 .. include:: ../README.rst
 
-Contents:
+Documentation
+=============
 
 .. toctree::
    :maxdepth: 2
