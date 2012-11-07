@@ -7,7 +7,6 @@ python:
 before_install:
  - "if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then sudo apt-get install python-nose; fi"
 install:
- - pip install docopt
- - pip install six
+ - python setup.py develop
 script: nosetests
 
