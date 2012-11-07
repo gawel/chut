@@ -15,6 +15,7 @@ Documentation
    sudo.rst
    ssh.rst
    chut.rst
+   chutify.rst
 
 
 
