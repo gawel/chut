@@ -51,13 +51,13 @@ You can use the test command::
 
     >>> from chut import test
 
-    >>> # test -f chut.py
-    >>> bool(test.f('chut.py'))
+    >>> # test -f chut/scripts.py
+    >>> bool(test.f('chut/scripts.py'))
     True
 
-    >>> # test -x chut.py
-    >>> if test.x('chut.py'):
-    ...     print('Chut.py is executable')
+    >>> # test -x chut/scripts.py
+    >>> if test.x('chut/scripts.py'):
+    ...     print('chut/scripts.py is executable')
 
 Debugging
 ==========

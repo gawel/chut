@@ -1,12 +1,15 @@
-# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os
 import sys
+import six
 import types
 import logging
+import shutil
 import functools
 import posixpath
-import subprocess
+from subprocess import Popen
+from subprocess import PIPE
+from subprocess import STDOUT
 from copy import deepcopy
 from contextlib import contextmanager
 
@@ -17,18 +20,33 @@ SUDO = '/usr/bin/sudo'
 
 def console_script(func):
     @functools.wraps(func)
-    def wrapper():
-        from docopt import docopt
-        sys.exit(func(docopt(func.__doc__)))
+    def wrapper(arguments=None):
+        doc = getattr(func, '__doc__', None)
+        if doc is None:
+            doc = 'Usage: %prog'
+        doc = doc.replace('%prog', func.__name__).strip()
+        doc = doc.replace('\n    ', '\n')
+        # take care if a script is chutified
+        if 'docopt' not in sys.modules:
+            import docopt
+        else:
+            docopt = sys.modules['docopt'] # NOQA
+        if isinstance(arguments, list):
+            arguments = docopt.docopt(doc, args=arguments)
+            return func(arguments)
+        else:
+            arguments = docopt.docopt(doc, help=True)
+            sys.exit(func(docopt.docopt(doc)))
+    wrapper.console_script = True
     return wrapper
 
 
 def check_sudo():
     if not os.path.isfile(SUDO):
         raise OSError('sudo is not installed')
-    whoami = subprocess.Popen([SUDO, 'whoami'],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT,
+    whoami = Popen([SUDO, 'whoami'],
+                              stdout=PIPE,
+                              stderr=STDOUT,
                               env=env)
     whoami.wait()
     whoami = whoami.stdout.read().strip()
@@ -70,7 +88,9 @@ class Pipe(object):
             kwargs['shell'] = kwargs.pop('sh')
         if 'combine_stderr' in kwargs:
             kwargs.pop('combine_stderr')
-            kwargs['stderr'] = subprocess.STDOUT
+            kwargs['stderr'] = STDOUT
+        if 'binary' in kwargs:
+            self._binary = kwargs.pop('binary')
         if 'pipe' in kwargs:
             if not kwargs.pop('pipe'):
                 self.__call__()
@@ -110,7 +130,9 @@ class Pipe(object):
         if self._stderr is None:
             stderr = [p.stderr.read() for p in self.processes if p.stderr]
             output = b'\n'.join(stderr).strip()
-            self._stderr = output.decode(self.encoding)
+            if not isinstance(output, six.text_type):
+                output = output.decode(self.encoding, 'ignore')
+            self._stderr = output
         return self._stderr
 
     @property
@@ -128,14 +150,15 @@ class Pipe(object):
         if self._cmd_args:
             args.extend(self._cmd_args)
 
+        if 'sudo' in args:
+            args[0:1] = [SUDO]
+
         binary = self._binary
         if self._cmd_args[:1] == ['ssh']:
             cmd = '%s %s' % (binary, ' '.join(self.args))
             cmd = cmd.strip()
             if ('|' in cmd or '>' in cmd) and shell:
                 cmd = repr(str(cmd))
-            if 'sudo' in cmd and '-t' not in self._cmd_args:
-                args.append('-t')
             args.append(cmd)
         else:
             args.append(binary)
@@ -186,8 +209,8 @@ class Pipe(object):
                 args = cmd.command_line(cmd.kwargs.get('shell', False))
 
                 kwargs = dict(
-                    stdin=stdin, stderr=subprocess.PIPE,
-                    stdout=subprocess.PIPE
+                    stdin=stdin, stderr=PIPE,
+                    stdout=PIPE
                     )
                 kwargs.update(cmd.kwargs)
 
@@ -197,7 +220,7 @@ class Pipe(object):
                     kwargs['env'] = env
 
                 try:
-                    p = subprocess.Popen(args, **kwargs)
+                    p = Popen(args, **kwargs)
                 except OSError:
                     self._raise(args, kwargs)
 
@@ -226,14 +249,14 @@ class Pipe(object):
             if kwargs.get('shell'):
                 cmd.kwargs['shell'] = True
             if kwargs.get('combine_stderr'):
-                cmd.kwargs['stderr'] = subprocess.STDOUT
+                cmd.kwargs['stderr'] = STDOUT
         stdout = self.stdout
         if stdout is not None:
             if hasattr(stdout, 'read'):
                 output = stdout.read().rstrip()
             else:
                 output = b''.join(list(stdout)).rstrip()
-            if not isinstance(output, str):
+            if not isinstance(output, six.text_type):
                 output = output.decode(self.encoding)
         else:
             output = ''
@@ -306,6 +329,9 @@ class Pipe(object):
 class Stdin(Pipe):
     """Used to infect some data in the pipe"""
 
+    stderr = ''
+    returncodes = []
+
     def __init__(self, value):
         super(Stdin, self).__init__()
         self.value = value
@@ -321,7 +347,10 @@ class Stdin(Pipe):
             if hasattr(self.value, 'read'):
                 value = self.value.read()
             else:
-                value = self.value
+                if not isinstance(self.value, six.binary_type):
+                    value = six.b(self.value)
+                else:
+                    value = self.value
             r, w = os.pipe()
             fd = os.fdopen(w, 'wb')
             fd.write(value)
@@ -330,6 +359,16 @@ class Stdin(Pipe):
 
     def __deepcopy__(self, *args):
         return self.__class__(self.value)
+
+    def _write(self, filename, mode):
+        with open(filename, mode) as fd:
+            if hasattr(self.value, 'seek'):
+                self.value.seek(0)
+            if hasattr(self.value, 'read'):
+                shutil.copyfileobj(self.value, fd)
+            else:
+                fd.write(self.value)
+        return self._get_stdout('')
 
 
 class Stdout(str):
@@ -353,8 +392,7 @@ class PyPipe(Pipe):
         return self.func(self.stdin)
 
     def __deepcopy__(self, *args):
-        self._stderr = None
-        return self
+        return ch.wraps(self.func)
 
 
 class Base(object):
@@ -393,7 +431,7 @@ class Chut(Base):
         return type(func.__name__, (PyPipe,), {'func': staticmethod(func)})()
 
     @contextmanager
-    def pipe(self, cmd):
+    def pipes(self, cmd):
         try:
             yield cmd
         finally:
@@ -401,6 +439,10 @@ class Chut(Base):
                 stderr = cmd.stderr
                 log.error('Error while running %r\n%s', cmd, stderr)
                 raise OSError(stderr)
+
+    def pipe(self, binary, *args, **kwargs):
+        pipe = getattr(self, binary)
+        return pipe(*args, **kwargs)
 
     def cd(self, directory):
         if self.__name__ not in ('sh', 'sudo'):
@@ -412,10 +454,6 @@ class Chut(Base):
 
     def ssh(self, *args):
         return SSH('ssh', *args)
-
-    @property
-    def test(self):
-        return Command('test')
 
 
 class Command(Base):
@@ -477,6 +515,7 @@ class ModuleWrapper(types.ModuleType):
 env = Environ(os.environ.copy())
 ch = Chut('sh')
 sudo = Chut('sudo', '-s')
+test = Command('test')
 
 try:
     import fabric.operations

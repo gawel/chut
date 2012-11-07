@@ -19,7 +19,7 @@ A context manager can help you to check for some errors::
 
     >>> from chut import cat, grep
 
-    >>> with sh.pipe(cat('fff') | grep('fff')) as p: # doctest: +ELLIPSIS
+    >>> with sh.pipes(cat('fff') | grep('fff')) as p: # doctest: +ELLIPSIS
     ...    print(p)
     Traceback (most recent call last):
     ...
@@ -61,7 +61,7 @@ You can use some python code ad the end of the pipe (and only at the end)::
     ...             yield b'Chut rocks!\n'
     ...             break
 
-    >>> with sh.pipe(cat('README.rst') | check_chut) as cmd:
+    >>> with sh.pipes(cat('README.rst') | check_chut) as cmd:
     ...     for line in cmd:
     ...         print(line)
     Chut rocks!
