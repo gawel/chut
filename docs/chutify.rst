@@ -49,10 +49,12 @@ And check the result in ``dist/scripts``::
     -h, --help    Print this help
 
 ..
-    >>> print(ch.pipe('python2.7', 'dist/scripts/my_script'))
-    Hello world
-    >>> print(ch.pipe('python3', 'dist/scripts/my_script'))
-    Hello world
+    >>> if test.x('/usr/bin/python2.7'):
+    ...   out = str(ch.pipe('python2.7', 'dist/scripts/my_script'))
+    ...   assert out.succeeded, out.stderr
+    >>> if test.x('/usr/bin/python3'):
+    ...   out = str(ch.pipe('python3', 'dist/scripts/my_script'))
+    ...   assert out.succeeded, out.stderr
     >>> ch.rm('-f myscript.*', shell=True).succeeded
     True
 
