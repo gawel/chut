@@ -22,9 +22,7 @@ Using pip::
 
 It's also recommended to install `docopt <https://github.com/docopt/docopt>`_::
 
-    $ pip install docopt
-
-This will allow you to use the :func:`console_script` decorator.
+This will also install docopt and allow you to use the :func:`console_script` decorator.
 
 Quick start
 ===========
@@ -51,7 +49,7 @@ Redirect output to a file::
 Use docopt to write a console script. This script will take an iface as
 argument and return a code 1 if no addresses are found::
 
-    >>> @ sh.console_script
+    >>> @sh.console_script
     ... def got_inet_addr(args):
     ...     """Usage: got_inet_addr <iface>"""
     ...     if sh.ifconfig(args['<iface>']) | sh.grep('inet addr:'):
