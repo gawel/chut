@@ -8,12 +8,12 @@ How it works
 -------------
 
 ..
+    >>> import os, sys
     >>> import chut as ch
     >>> from chut import test
     >>> ch.rm('-Rf', 'dist/scripts').succeeded
     True
-    >>> ch.env['PATH'] = 'bin:/bin:/usr/bin'
-    >>>
+    >>> ch.env['PATH'] = 'bin:/bin:/usr/bin:' + os.path.dirname(sys.executable)
 
 Write a file with a function in it::
 
