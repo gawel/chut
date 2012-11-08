@@ -20,9 +20,7 @@ Using pip::
 
     $ pip install chut
 
-It's also recommended to install `docopt <https://github.com/docopt/docopt>`_::
-
-This will also install docopt and allow you to use the :func:`console_script` decorator.
+This will also install docopt and allow you to use the ``@console_script`` decorator.
 
 Quick start
 ===========
