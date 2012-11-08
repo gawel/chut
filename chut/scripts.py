@@ -5,6 +5,35 @@ import sys
 import six
 import os
 
+SCRIPT_HEADER = '''
+#!/usr/bin/env python
+import base64, json, types, sys
+PY3 = sys.version_info[0] == 3
+mods = []
+'''.lstrip()
+
+LOAD_MODULES = '''
+for name, code in mods:
+    if PY3:
+        if isinstance(code, str):
+            code = code.encode('utf-8')
+    else:
+        name = bytes(name)
+    code = base64.decodestring(code)
+    mod = types.ModuleType(name)
+    globs = dict()
+    if PY3:
+        if isinstance(code, bytes):
+            code = code.decode('utf-8')
+        exec(code, globs)
+    else:
+        exec('exec code in globs')
+    mod.__dict__.update(globs)
+    sys.modules[name] = mod
+
+import six
+'''.lstrip()
+
 
 def encode_module(mod):
     if not hasattr(mod, '__file__'):
@@ -19,6 +48,9 @@ def chutify(arguments):
     """
     Usage: %prog <scripts> [<MODULE>...]
            %prog <scripts> (-l | -h)
+
+    Generate binary scripts from all @console_script contained in <scripts>
+    <scripts> can be a python file or a dotted name.
 
     -h, --help               Print this help
     -l, --list-entry-points  List console script entry points
@@ -41,48 +73,20 @@ def chutify(arguments):
 
     if arguments['--list-entry-points']:
         for name in scripts:
-            print(('%s = %s:%s' % (name, mod.__name__, name)))
+            print(('%s = %s:%s' % (name.replace('_', '-'),
+                                   mod.__name__, name)))
         sys.exit(0)
 
     modules = [six, 'docopt', sh] + arguments['<MODULE>']
     modules = ''.join([encode_module(m) for m in modules])
     sh.mkdir('-p dist/scripts')
     for name in scripts:
-        script = 'dist/scripts/%s' % name
+        script = 'dist/scripts/%s' % name.replace('_', '-')
         with open(script, 'w') as fd:
-            fd.write((
-                '#!/usr/bin/env python\n'
-                'import base64, json, types, sys\n'
-                'PY3 = sys.version_info[0] == 3\nmods = []\n'))
-
-            fd.write(modules)
-            fd.write('''
-for name, code in mods:
-    if PY3:
-        if isinstance(code, str):
-            code = code.encode('utf-8')
-    else:
-        name = bytes(name)
-    code = base64.decodestring(code)
-    mod = types.ModuleType(name)
-    globs = dict()
-    if PY3:
-        if isinstance(code, bytes):
-            code = code.decode('utf-8')
-        exec(code, globs)
-    else:
-        exec('exec code in globs')
-    mod.__dict__.update(globs)
-    sys.modules[name] = mod
-
-import six
-''')
+            fd.write(SCRIPT_HEADER + modules + LOAD_MODULES)
             fd.write(inspect.getsource(mod).replace('__main__',
                                                     '__chutified__'))
-            fd.write('''
-if __name__ == '__main__':
-    %s()
-''' % name)
+            fd.write("if __name__ == '__main__':\n    %s()\n" % name)
         print('writing %s' % script)
         executable = sh.chmod('+x', script)
         if executable:

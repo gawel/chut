@@ -16,6 +16,7 @@ Documentation
    ssh.rst
    chut.rst
    chutify.rst
+   examples.rst
 
 
 

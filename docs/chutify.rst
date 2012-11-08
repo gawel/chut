@@ -32,28 +32,28 @@ Write a file with a function in it::
 Then run chutify on it::
 
     >>> print(ch.chutify('myscript.py', combine_stderr=True))
-    writing dist/scripts/my_script
-    chmod +x dist/scripts/my_script
+    writing dist/scripts/my-script
+    chmod +x dist/scripts/my-script
 
 And check the result in ``dist/scripts``::
 
-    >>> bool(test.x('dist/scripts/my_script'))
+    >>> bool(test.x('dist/scripts/my-script'))
     True
 
-    >>> print(ch.pipe('dist/scripts/my_script'))
+    >>> print(ch.pipe('dist/scripts/my-script'))
     Hello world
 
-    >>> print(ch.pipe('dist/scripts/my_script', '-h'))
-    Usage: my_script [-h]
+    >>> print(ch.pipe('dist/scripts/my-script', '-h'))
+    Usage: my-script [-h]
     <BLANKLINE>
     -h, --help    Print this help
 
 ..
     >>> if test.x('/usr/bin/python2.7'):
-    ...   out = str(ch.pipe('python2.7', 'dist/scripts/my_script'))
+    ...   out = str(ch.pipe('python2.7', 'dist/scripts/my-script'))
     ...   assert out.succeeded, out.stderr
     >>> if test.x('/usr/bin/python3'):
-    ...   out = str(ch.pipe('python3', 'dist/scripts/my_script'))
+    ...   out = str(ch.pipe('python3', 'dist/scripts/my-script'))
     ...   assert out.succeeded, out.stderr
     >>> ch.rm('-f myscript.*', shell=True).succeeded
     True

@@ -24,7 +24,8 @@ def console_script(func):
         doc = getattr(func, '__doc__', None)
         if doc is None:
             doc = 'Usage: %prog'
-        doc = doc.replace('%prog', func.__name__).strip()
+        name = func.__name__.replace('_', '-')
+        doc = doc.replace('%prog', name).strip()
         doc = doc.replace('\n    ', '\n')
         # take care if a script is chutified
         if 'docopt' not in sys.modules:
