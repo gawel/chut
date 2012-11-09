@@ -15,7 +15,11 @@ from contextlib import contextmanager
 
 log = logging.getLogger('chut')
 
-SUDO = '/usr/bin/sudo'
+aliases = dict(
+    ifconfig='/sbin/ifconfig',
+    sudo='/usr/bin/sudo',
+    ssh='ssh',
+  )
 
 
 def console_script(func):
@@ -43,12 +47,13 @@ def console_script(func):
 
 
 def check_sudo():
-    if not os.path.isfile(SUDO):
+    sudo = aliases.get('sudo')
+    if not os.path.isfile(sudo):
         raise OSError('sudo is not installed')
-    whoami = Popen([SUDO, 'whoami'],
-                              stdout=PIPE,
-                              stderr=STDOUT,
-                              env=env)
+    whoami = Popen([sudo, 'whoami'],
+                   stdout=PIPE,
+                   stderr=STDOUT,
+                   env=env)
     whoami.wait()
     whoami = whoami.stdout.read().strip()
     if whoami != 'root':
@@ -62,7 +67,7 @@ class Environ(dict):
 
     def __setattr__(self, attr, value):
         if isinstance(value, (list, tuple)):
-            value = ':'.join(value)
+            value = os.pathsep.join(value)
         self[attr.upper()] = value
 
     def __call__(self, **kwargs):
@@ -73,6 +78,7 @@ class Environ(dict):
 
 
 class Pipe(object):
+    """A pipe object. Represent a set of one or more commands."""
 
     _chut = None
     _pipe = True
@@ -119,10 +125,7 @@ class Pipe(object):
         """True if all processes succeeded"""
         output = self.__call__()
         if output.succeeded:
-            if output:
-                return output
-            else:
-                return True
+            return output or True
         return False
 
     @property
@@ -152,7 +155,7 @@ class Pipe(object):
             args.extend(self._cmd_args)
 
         if 'sudo' in args:
-            args[0:1] = [SUDO]
+            args[0:1] = [aliases.get('sudo')]
 
         binary = self._binary
         if self._cmd_args[:1] == ['ssh']:
@@ -162,7 +165,7 @@ class Pipe(object):
                 cmd = repr(str(cmd))
             args.append(cmd)
         else:
-            args.append(binary)
+            args.extend(binary.split())
             if isinstance(self.args, list):
                 for a in self.args:
                     args.extend(a.split())
@@ -214,11 +217,12 @@ class Pipe(object):
                     stdout=PIPE
                     )
                 kwargs.update(cmd.kwargs)
+                env_ = kwargs.pop('env', env)
 
-                log.debug('Running Popen(%r, **%r)', args, kwargs)
+                log.debug('Popen(%r, **%r)', args, kwargs)
 
                 if 'env' not in kwargs:
-                    kwargs['env'] = env
+                    kwargs['env'] = env_
 
                 try:
                     p = Popen(args, **kwargs)
@@ -322,13 +326,15 @@ class Pipe(object):
     def _raise(self, args, kwargs):
         if isinstance(args, list):
             args = ' '.join(args)
+        env_ = kwargs.pop('env')
         log.debug('Error while running Popen(%r, **%r)',
                   args, kwargs)
+        kwargs['env'] = env_
         raise OSError(args)
 
 
 class Stdin(Pipe):
-    """Used to infect some data in the pipe"""
+    """Used to inject some data in the pipe"""
 
     stderr = ''
     returncodes = []
@@ -407,11 +413,18 @@ class Base(object):
         if cmd_args:
             self._cmd_args = [name] + list(cmd_args)
 
+    def set_debug(self, enable=True):
+        if enable:
+            log.setLevel(logging.DEBUG)
+            log.addHandler(logging.StreamHandler(sys.stdout))
+        else:
+            log.setLevel(logging.INFO)
+
     def __getattr__(self, attr):
         attr = str(attr)
         if attr not in self._cmds:
             kw = dict(_chut=self,
-                      _binary=attr,
+                      _binary=str(aliases.get(attr, attr)),
                       _cmd_args=self._cmd_args,
                       _pipe=True)
             if attr in self.not_piped:
@@ -420,10 +433,7 @@ class Base(object):
         return self._cmds[attr]
 
     def __repr__(self):
-        if self.__host__:
-            return '<%s %>' % (self.__name__, self.__host__)
-        else:
-            return '<%s>' % self.__name__
+        return '<%s>' % self.__name__
 
 
 class Chut(Base):
@@ -478,8 +488,12 @@ class SSH(Base):
     def join(self, *args):
         return '%s%s' % (self, posixpath.join(*args))
 
+    @property
+    def host(self):
+        return self._cmd_args[-1]
+
     def __str__(self):
-        return '%s:' % self._cmd_args[-1]
+        return '%s:' % self.host
 
     def __call__(self, *args, **kwargs):
         cmds = []
@@ -488,7 +502,8 @@ class SSH(Base):
                 cmds.append(a.commands_line)
             else:
                 cmds.append(a)
-        return getattr(SSH('ssh', *self._cmd_args[1:]), '')(*cmds, **kwargs)
+        srv = getattr(SSH(aliases.get('ssh'), *self._cmd_args[1:]), '')
+        return srv(*cmds, **kwargs)
 
 
 class ModuleWrapper(types.ModuleType):

@@ -44,6 +44,18 @@ By default a command do not use a shell. But if you need you can use one::
     >>> sh.ls(sh=True)
     'ls'
 
+Aliases
+========
+
+You can define some aliases::
+
+  >>> sh.aliases['ll'] = '/usr/local/bin/ls -l'
+  >>> sh.aliases['python'] = '/opt/python3/bin/python3'
+  >>> print(repr(sh.ll('.')))
+  '/usr/local/bin/ls -l .'
+  >>> print(repr(sh.python('-c "import sys"')))
+  '/opt/python3/bin/python3 -c "import sys"'
+
 The test command
 ================
 
@@ -69,9 +81,12 @@ You can print your pipe::
 
 You can also activate logging::
 
-    >>> import logging
-    >>> logging.basicConfig(level=logging.DEBUG)
-    >>> log = logging.getLogger('chut')
-    >>> # set level/handler
+    >>> sh.set_debug()
+    >>> print(cat('README.rst') | grep('Chut') | sh.head('-n1')) # doctest: +ELLIPSIS
+    Popen(['cat', 'README.rst'], **{...})
+    Popen(['grep', 'Chut'], **{...})
+    Popen(['head', '-n1'], **{...})
+    Chut!
+ 
 
 Cheers.

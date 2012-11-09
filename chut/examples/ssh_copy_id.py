@@ -12,7 +12,7 @@ def ssh_copy_id(args):
     stdin = None
     pubkey = args['<pubkey>']
 
-    if not pubkey:
+    if not pubkey and sh.env.SSH_AUTH_SOCK:
         ret = str(sh.pipe('ssh-add', '-L', combine_stderr=True))
         if ret.succeeded:
             stdin = sh.stdin(ret.strip() + '\n')
@@ -26,11 +26,11 @@ def ssh_copy_id(args):
         stdin = sh.cat(pubkey)
 
     srv = sh.ssh(args['<host>'])
-    if stdin | srv(("umask 077;test -d .ssh || mkdir .ssh;"
+    if stdin | srv(("umask 077; test -d .ssh || mkdir .ssh;"
                     "cat >> .ssh/authorized_keys")):
         print('Key added to %s' % (args['<host>'],))
         print('Trying to cat %s~/.ssh/authorized_keys...' % srv)
-        print(srv.cat('~/.ssh/authorized_keys'))
+        print(srv.cat('~/.ssh/authorized_keys') | sh.tail('-n1'))
         return 0
     print('Failed to add key')
     return 1

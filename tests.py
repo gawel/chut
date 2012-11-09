@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+import six
 import unittest
 from chut import ch
 
@@ -34,9 +35,9 @@ class Chut(unittest.TestCase):
 
     def test_stdin(self):
         content = open(__file__).read().strip()
-        try:
+        if not isinstance(content, six.binary_type):
             bcontent = content.encode('utf-8')
-        except:
+        else:
             bcontent = content
         self.assertEqual(content,
                          str(ch.stdin(bcontent) | ch.cat('-')))
