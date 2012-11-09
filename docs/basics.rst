@@ -56,6 +56,31 @@ You can define some aliases::
   >>> print(repr(sh.python('-c "import sys"')))
   '/opt/python3/bin/python3 -c "import sys"'
 
+Environ
+=======
+
+..
+  >>> sh.env.old_path = sh.env.path
+
+Chut use a copy of ``os.environ`` but you can modify values::
+
+  >>> from chut import env
+  >>> env.path = '/usr/bin:/usr/local/bin'
+  >>> env.path
+  '/usr/bin:/usr/local/bin'
+  >>> env.path = ['/usr/bin', '/usr/local/bin']
+  >>> env.path
+  '/usr/bin:/usr/local/bin'
+
+..
+  >>> env.path = env.old_path
+
+You can also pass a copy to your commands::
+
+  >>> env = sh.env()
+  >>> sh.cat('-', env=env)
+  'cat -'
+
 The test command
 ================
 
