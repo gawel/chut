@@ -50,10 +50,10 @@ def check_sudo():
     sudo = aliases.get('sudo')
     if not os.path.isfile(sudo):
         raise OSError('sudo is not installed')
-    whoami = Popen([sudo, 'whoami'],
-                   stdout=PIPE,
-                   stderr=STDOUT,
-                   env=env)
+    args = [sudo, '-s', 'whoami']
+    kwargs = dict(stdout=PIPE, stderr=STDOUT)
+    log.debug('Popen(%r, **%r)', args, kwargs)
+    whoami = Popen(args, env=env, **kwargs)
     whoami.wait()
     whoami = whoami.stdout.read().strip()
     if whoami != 'root':
@@ -61,6 +61,7 @@ def check_sudo():
 
 
 class Environ(dict):
+    """Manage os.environ"""
 
     def __getattr__(self, attr):
         return self.get(attr.upper(), None)
@@ -221,8 +222,7 @@ class Pipe(object):
 
                 log.debug('Popen(%r, **%r)', args, kwargs)
 
-                if 'env' not in kwargs:
-                    kwargs['env'] = env_
+                kwargs['env'] = env_
 
                 try:
                     p = Popen(args, **kwargs)
@@ -432,6 +432,8 @@ class Base(object):
             self._cmds[attr] = type(attr, (Pipe,), kw)
         return self._cmds[attr]
 
+    __getitem__ = __getattr__
+
     def __repr__(self):
         return '<%s>' % self.__name__
 
@@ -526,6 +528,8 @@ class ModuleWrapper(types.ModuleType):
             return getattr(self.mod, attr)
         else:
             return getattr(self.chut, attr)
+
+    __getitem__ = __getattr__
 
 
 env = Environ(os.environ.copy())

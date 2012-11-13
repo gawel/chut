@@ -12,6 +12,12 @@ Pipe
     >>> import chut as sh
     >>> from chut import cat, grep
 
+Environ
+=======
+
+.. autoclass:: chut.Environ
+   :members:
+
 Input
 =====
 

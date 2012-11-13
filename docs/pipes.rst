@@ -66,3 +66,21 @@ You can use some python code ad the end of the pipe (and only at the end)::
     ...         print(line)
     Chut rocks!
     <BLANKLINE>
+
+Access binaries outside of PATH
+================================
+
+You can use ``pipe`` to get some binaries::
+
+  >>> sh.pipe('/opt/foo/bin/bar --help')
+  '/opt/foo/bin/bar --help'
+
+You can also use getitem::
+
+  >>> sh['/opt/foo/bin/bar']('--help')
+  '/opt/foo/bin/bar --help'
+
+Or getattr...::
+
+  >>> getattr(sh, '/opt/bar/bin/foo')('--help')
+  '/opt/bar/bin/foo --help'
