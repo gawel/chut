@@ -316,6 +316,8 @@ class Pipe(object):
         return None
 
     def _get_stdout(self, stdout):
+        if not six.PY3 and not isinstance(stdout, six.binary_type):
+            stdout = stdout.encode(self.encoding)
         output = Stdout(stdout)
         output.stderr = self.stderr
         output.returncodes = self.returncodes
