@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from chut import console_script, stdin, env, test, casperjs, which, mktemp
+from chut import console_script, stdin, env, test, casperjs, which, mktemp, rm
 import atexit
 import sys
 import os
@@ -13,8 +13,6 @@ Example usage::
     $ echo "hello" | translate -
     $ translate -l fr:en bonjour
     $ translate -i
-    Text: hello
-
 """
 
 SCRIPT = b"""
@@ -44,32 +42,28 @@ require('casper').create().start()
 """
 
 
-def show_result(cmd):
-    for line in cmd:
-        line = line.strip()
-        if not line:
-            continue
-        elif ':' in line:
-            line = '- ' + line
-        print(line)
-
-
 @console_script
 def translate(args):
-    """
-    Usage: %prog [options] [-] [<text>...]
+    """Usage: %prog [options] [-] [<text>...]
 
     -l LANGS, --langs=LANGS     Langs [default: en:fr]
     -i, --interactive           Translate line by line in interactive mode
+    -h, --help                  Show this help
     """
     if not which('casperjs'):
         print('You must install casperjs first')
         return 1
     env.tr_pair = args['--langs'].replace(':', '|')
     script = str(mktemp('translate-XXXX.js'))
-    atexit.register(os.remove, script)
+    atexit.register(rm(script))
     stdin(SCRIPT) > script
-    translate = casperjs(script)
+
+    def show_result():
+        for line in [l.strip() for l in casperjs(script) if l.strip()]:
+            if b':' in line:
+                line = b'- ' + line
+            print(line)
+
     if args['--interactive'] or not (args['-'] or args['<text>']):
         import readline
         hist = os.path.join(os.path.expanduser('~'), '.translate_history')
@@ -82,12 +76,12 @@ def translate(args):
             except KeyboardInterrupt:
                 return
             else:
-                show_result(translate)
+                show_result()
     elif args['-']:
         env.tr_text = sys.stdin.read()
     elif args['<text>']:
         env.tr_text = ' '.join(args['<text>'])
-    show_result(translate)
+    show_result()
 
 if __name__ == '__main__':
     translate()
