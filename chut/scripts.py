@@ -29,7 +29,10 @@ for name, code in mods:
     else:
         exec('exec code in globs')
     mod.__dict__.update(globs)
-    sys.modules[name] = mod
+    if name == 'chut':
+        mod.wraps_module(mod)
+    else:
+        sys.modules[name] = mod
 
 import six
 '''.lstrip()

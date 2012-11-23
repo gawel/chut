@@ -555,7 +555,11 @@ else:
     fab_run_command = fabric.operations._run_command
     fabric.operations._run_command = _run_command
 
+
+def wraps_module(mod):
+    sys.modules['chut'] = ModuleWrapper(mod, ch, 'chut')
+    sys.modules['chut.sudo'] = ModuleWrapper(mod, sudo, 'sudo')
+
 if __name__ != '__main__':
     mod = sys.modules[__name__]
-    sys.modules[__name__] = ModuleWrapper(mod, ch, __name__)
-    sys.modules['chut.sudo'] = ModuleWrapper(mod, sudo, 'sudo')
+    wraps_module(mod)

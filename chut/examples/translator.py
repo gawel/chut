@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 from chut import console_script, stdin, env, test, casperjs, which, mktemp, rm
 import atexit
+import six
 import sys
 import os
 
@@ -15,7 +15,7 @@ Example usage::
     $ translate -i
 """
 
-SCRIPT = b"""
+SCRIPT = six.b("""
 system = require('system')
 require('casper').create().start()
   .open('http://translate.google.com/#' + system.env['TR_PAIR'])
@@ -39,7 +39,7 @@ require('casper').create().start()
         this.echo(results.join(''))
     })
 }).run()
-"""
+""")
 
 
 @console_script
@@ -60,8 +60,8 @@ def translate(args):
 
     def show_result():
         for line in [l.strip() for l in casperjs(script) if l.strip()]:
-            if b':' in line:
-                line = b'- ' + line
+            if ':' in line:
+                line = '- ' + line
             print(line)
 
     if args['--interactive'] or not (args['-'] or args['<text>']):
@@ -70,9 +70,10 @@ def translate(args):
         if test.f(hist):
             readline.read_history_file(hist)
         atexit.register(readline.write_history_file, hist)
+        from six.moves import input
         while True:
             try:
-                env.tr_text = raw_input('Text: ')
+                env.tr_text = input('Text: ')
             except KeyboardInterrupt:
                 return
             else:
