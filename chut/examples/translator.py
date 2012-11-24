@@ -17,27 +17,21 @@ Example usage::
 
 SCRIPT = six.b("""
 system = require('system')
-require('casper').create().start()
-  .open('http://translate.google.com/#' + system.env['TR_PAIR'])
-  .then(function(){
-    this.fill('form#gt-form', {text: system.env['TR_TEXT']}, false)
-    this.click('input#gt-submit')
-    this.waitForSelector('span.hps', function() {
-        results = this.evaluate(function() {
-            return document.querySelectorAll('span#result_box')
-        })
-        this.echo(results[0].innerText)
-        results = this.evaluate(function() {
-            results = document.querySelectorAll('table.gt-baf-table tr')
-            return Array.prototype.map.call(results, function(e) {
-                if (!/colspan/.exec(e.innerHTML))
-                    return e.innerText.replace(/\\n/,': ')
-                else
-                    return ''
-            })
-        })
-        this.echo(results.join(''))
-    })
+require('casper').create()
+  .start('http://translate.google.com/#' + system.env['TR_PAIR'], function(){
+      this.fill('form#gt-form', {text: system.env['TR_TEXT']}, false)})
+  .waitForSelector('span.hps', function() {
+      this.echo(this.fetchText('#result_box'))
+      results = this.evaluate(function() {
+          results = document.querySelectorAll('table.gt-baf-table tr')
+          return Array.prototype.map.call(results, function(e) {
+              if (!/colspan/.exec(e.innerHTML))
+                  return e.innerText.replace(/\\n/,': ')
+              else
+                  return ''
+          })
+      })
+      this.echo(results.join(''))
 }).run()
 """)
 

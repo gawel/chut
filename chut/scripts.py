@@ -43,7 +43,7 @@ def encode_module(mod):
         mod = __import__(mod, globals(), locals(), [''])
     data = inspect.getsource(mod)
     data = base64.encodestring(six.b(data))
-    return 'mods.append((%r, %r))\n' % (mod.__name__, data)
+    return 'mods.append((%r, %r))\n' % (str(mod.__name__), data)
 
 
 @sh.console_script
