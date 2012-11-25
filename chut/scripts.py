@@ -49,14 +49,15 @@ def encode_module(mod):
 @sh.console_script
 def chutify(arguments):
     """
-    Usage: %prog <scripts> [<MODULE>...]
+    Usage: %prog [-d DEST] <scripts> [<MODULE>...]
            %prog <scripts> (-l | -h)
 
     Generate binary scripts from all @console_script contained in <scripts>
     <scripts> can be a python file or a dotted name.
 
-    -h, --help               Print this help
-    -l, --list-entry-points  List console script entry points
+    -h, --help                   Print this help
+    -d DEST, --destination=DEST  Destination [default: dist/scripts]
+    -l, --list-entry-points      List console script entry points
     """
     filename = arguments['<scripts>']
     if not os.path.isfile(filename):
@@ -80,11 +81,13 @@ def chutify(arguments):
                                    mod.__name__, name)))
         sys.exit(0)
 
+    dest = arguments['--destination']
+    sh.mkdir('-p', dest)
+
     modules = [six, 'docopt', sh] + arguments['<MODULE>']
     modules = ''.join([encode_module(m) for m in modules])
-    sh.mkdir('-p dist/scripts')
     for name in scripts:
-        script = 'dist/scripts/%s' % name.replace('_', '-')
+        script = os.path.join(dest, name.replace('_', '-'))
         with open(script, 'w') as fd:
             fd.write(SCRIPT_HEADER + modules + LOAD_MODULES)
             fd.write(inspect.getsource(mod).replace('__main__',
