@@ -456,7 +456,7 @@ class Chut(Base):
                 raise OSError(stderr)
 
     def pipe(self, binary, *args, **kwargs):
-        pipe = getattr(self, binary)
+        pipe = getattr(self, str(binary))
         return pipe(*args, **kwargs)
 
     def cd(self, directory):
