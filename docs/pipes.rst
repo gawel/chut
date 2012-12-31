@@ -11,6 +11,7 @@ You can always check what a :class:`~chut.Pipe` will execute with
 
 ..
     >>> import chut as sh
+    >>> sh.env.lc_all = 'C'
 
 The pipe context manager
 ========================

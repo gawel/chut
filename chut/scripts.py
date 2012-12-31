@@ -84,7 +84,7 @@ def chutify(arguments):
     dest = arguments['--destination']
     sh.mkdir('-p', dest)
 
-    modules = [six, 'docopt', sh] + arguments['<MODULE>']
+    modules = [six, 'docopt', 'ConfigObject', sh] + arguments['<MODULE>']
     modules = ''.join([encode_module(m) for m in modules])
     for name in scripts:
         script = os.path.join(dest, name.replace('_', '-'))
