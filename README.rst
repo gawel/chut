@@ -44,6 +44,21 @@ Redirect output to a file::
     >>> print(sh.cat('/tmp/chut.txt'))
     Chut!
 
+Or to stdout::
+
+    >>> sh.cat('/tmp/chut.txt') > 1  # doctest: +SKIP
+    Chut!
+
+Redirect both stdout and stderr to stdout::
+
+    >>> sh.cat('/tmp/chut.txt') > 2  # doctest: +SKIP
+    Chut!
+
+Run many command with a pool of processes::
+
+    >>> [ret.succeeded for ret in sh.ls.map('%s', ['.', '/tmp'])]
+    [True, True]
+
 Use docopt to write a console script. This script will take an iface as
 argument and return a code 1 if no addresses are found::
 

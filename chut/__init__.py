@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 import os
 import sys
 import six
+import time
 import types
 import logging
 import shutil
@@ -84,13 +85,18 @@ class Pipe(object):
     _chut = None
     _pipe = True
     _cmd_args = []
+    _sys_stdout = sys.stdout
+    _sys_stderr = sys.stderr
 
     def __init__(self, *args, **kwargs):
         self._stderr = None
         self.args = list(args)
         self.previous = None
         self.processes = []
-        self.encoding = kwargs.get('encoding', 'utf8')
+        encoding = kwargs.get('encoding')
+        if not encoding:
+            encoding = getattr(sys.stdout, 'encoding', None) or 'utf8'
+        self.encoding = encoding
         self.kwargs = kwargs
         if 'sh' in kwargs:
             kwargs['shell'] = kwargs.pop('sh')
@@ -233,6 +239,53 @@ class Pipe(object):
                 stdin = p.stdout
         return stdin
 
+    @classmethod
+    def map(cls, template, args,
+            pool_size=None, stop_on_failure=False, **kwargs):
+        """Run a batch of the same command and manage a pool of processes for
+        you"""
+        kw = dict(
+            stdin=sys.stdin, stderr=PIPE,
+            stdout=PIPE
+            )
+        kw.update(kwargs)
+        if pool_size is None:
+            import multiprocessing
+            pool_size = multiprocessing.cpu_count()
+        results = [None] * len(args)
+        processes = []
+        index = 0
+        out_index = 0
+        while args or processes:
+            if args and len(processes) < pool_size:
+                cmd = cls(template % args.pop(0))
+                a = cmd.command_line(cmd.kwargs.get('shell', False))
+                processes.append((index, Popen(a, **kw)))
+                index += 1
+            for i, p in processes:
+                result = p.poll()
+                if result is not None:
+                    output = Stdout(p.stdout.read())
+                    output.stderr = p.stderr.read()
+                    output.returncodes = [result]
+                    output.failed = bool(result)
+                    output.succeeded = not output.failed
+                    results[i] = output
+                    processes.remove((i, p))
+                    if out_index == i:
+                        out_index += 1
+                        yield results[i]
+                    if result > 0 and stop_on_failure:
+                        args = None
+                        for index, p in processes:
+                            if p.poll() is None:
+                                p.kill()
+                        raise OSError(i, output.stderr)
+            time.sleep(.1)
+        if out_index < len(results):
+            yield results[out_index]
+            out_index += 1
+
     def __getitem__(self, item):
         if not isinstance(item, slice):
             raise KeyError('You can only use slices')
@@ -247,7 +300,7 @@ class Pipe(object):
 
     def __iter__(self):
         for line in self.stdout:
-            yield line.decode(self.encoding)
+            yield self._decode(line)
 
     def __call__(self, **kwargs):
         for cmd in self.commands:
@@ -261,8 +314,7 @@ class Pipe(object):
                 output = stdout.read().rstrip()
             else:
                 output = b''.join(list(stdout)).rstrip()
-            if not isinstance(output, six.text_type):
-                output = output.decode(self.encoding)
+            output = self._decode(output)
         else:
             output = ''
         return self._get_stdout(output)
@@ -304,16 +356,34 @@ class Pipe(object):
                 cmds[i].previous = cmds[i - 1]
         return cmds
 
+    def _write_to(self, fd):
+        if not isinstance(self, PyPipe):
+            self.kwargs['stdout'] = fd
+            return self.__call__()
+        else:
+            for line in self.stdout:
+                fd.write(line)
+            return self._get_stdout('')
+
     def _write(self, filename, mode):
-        with open(filename, mode) as fd:
-            if not isinstance(self, PyPipe):
-                self.kwargs['stdout'] = fd
-                return self.__call__()
+        if isinstance(filename, int):
+            self.kwargs['stderr'] = STDOUT
+            if filename in (2, 22):
+                fd = self._sys_stderr
             else:
-                for line in self.stdout:
-                    fd.write(line)
-                return self._get_stdout('')
-        return None
+                fd = self._sys_stdout
+            output = self._write_to(fd)
+        else:
+            with open(filename, mode) as fd:
+                output = self._write_to(fd)
+        if output.failed:
+            raise OSError('Command exited with codes %s' % output.returncodes)
+        return output
+
+    def _decode(self, output):
+        if six.PY3 and not isinstance(output, six.text_type):
+            output = output.decode(self.encoding)
+        return output
 
     def _get_stdout(self, stdout):
         if not six.PY3 and not isinstance(stdout, six.binary_type):
@@ -441,6 +511,9 @@ class Base(object):
 
 
 class Chut(Base):
+
+    STDOUT = S = 1
+    STDERR = 2
 
     def wraps(self, func):
         return type(func.__name__, (PyPipe,), {'func': staticmethod(func)})()
