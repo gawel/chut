@@ -46,54 +46,70 @@ def encode_module(mod):
     return 'mods.append((%r, %r))\n' % (str(mod.__name__), data)
 
 
-@sh.console_script
-def chutify(arguments):
-    """
-    Usage: %prog [-d DEST] <scripts> [<MODULE>...]
-           %prog <scripts> (-l | -h)
-
-    Generate binary scripts from all @console_script contained in <scripts>
-    <scripts> can be a python file or a dotted name.
-
-    -h, --help                   Print this help
-    -d DEST, --destination=DEST  Destination [default: dist/scripts]
-    -l, --list-entry-points      List console script entry points
-    """
-    filename = arguments['<scripts>']
+def generate(arguments, filename):
     if not os.path.isfile(filename):
         mod = __import__(filename, globals(), locals(), [''])
         filename = mod.__file__
         name = mod.__name__
     else:
-        name = os.path.splitext(os.path.basename(filename))[0]
         dirname = os.path.dirname(filename)
         sys.path.insert(0, dirname)
+        name = inspect.getmodulename(filename)
         mod = __import__(name)
 
-    scripts = []
+    filenames = []
     for k, v in mod.__dict__.items():
         if getattr(v, 'console_script', False) is True:
-            scripts.append(k)
+            filenames.append(k)
 
     if arguments['--list-entry-points']:
-        for name in scripts:
+        for name in filenames:
             print(('%s = %s:%s' % (name.replace('_', '-'),
                                    mod.__name__, name)))
         sys.exit(0)
 
-    dest = arguments['--destination']
+    dest = os.path.expanduser(arguments['--destination'])
     sh.mkdir('-p', dest)
 
     modules = [six, 'docopt', 'ConfigObject', sh] + arguments['<MODULE>']
     modules = ''.join([encode_module(m) for m in modules])
-    for name in scripts:
+    for name in filenames:
         script = os.path.join(dest, name.replace('_', '-'))
         with open(script, 'w') as fd:
             fd.write(SCRIPT_HEADER + modules + LOAD_MODULES)
             fd.write(inspect.getsource(mod).replace('__main__',
                                                     '__chutified__'))
             fd.write("if __name__ == '__main__':\n    %s()\n" % name)
-        print('writing %s' % script)
         executable = sh.chmod('+x', script)
         if executable:
             print(executable.commands_line)
+        else:
+            print('failed to generate %s' % script)
+
+
+@sh.console_script
+def chutify(arguments):
+    """
+    Usage: %prog [-d DIRNAME] <location> [<MODULE>...]
+           %prog <location> (-l | -h)
+
+    Generate binary scripts from all @console_script contained in <location>
+    <location> can be a directory, a python file or a dotted name.
+
+    -h, --help                         Print this help
+    -d DIRNAME, --destination=DIRNAME  Destination [default: dist/scripts]
+    -l, --list-entry-points            List console script entry points
+    """
+    location = arguments['<location>']
+    location = os.path.expanduser(location)
+    if os.path.isfile(location):
+        generate(arguments, location)
+    elif os.path.isdir(location):
+        filenames = []
+        filenames = sh.grep('-lRE --include=*.py @.*console_script',
+                            location) | sh.grep('-v site-packages')
+        filenames = [s.strip() for s in filenames]
+        for filename in filenames:
+            generate(arguments, filename)
+    else:
+        generate(arguments, location)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from chut import console_script, stdin, env, test, casperjs, which, mktemp, rm
+from chut import *  # NOQA
 import atexit
 import six
 import sys
@@ -53,7 +53,7 @@ def translate(args):
     stdin(SCRIPT) > script
 
     def show_result():
-        for line in [l.strip() for l in casperjs(script) if l.strip()]:
+        for line in [l.strip() for l in sh.casperjs(script) if l.strip()]:
             if ':' in line:
                 line = '- ' + line
             print(line)

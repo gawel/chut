@@ -27,5 +27,7 @@ setup(name='chut',
       entry_points="""
       [console_scripts]
       chutify = chut.scripts:chutify
+      [zc.buildout]
+      default = chut.recipe:Recipe
       """,
       )

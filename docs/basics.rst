@@ -20,6 +20,10 @@ But you can also import some specific commands::
     >>> from chut import cat, grep, gzip, gunzip
     >>> from chut.sudo import ifconfig
 
+Or import "all" commands. Where "all" is a ``unexaustive set`` of commands::
+
+    >>> from chut import *
+
 
 Exceptions
 ==========
@@ -29,7 +33,7 @@ The ``cd`` command use python ``os.chdir()``
 Some commands do not use a pipe by default. This mean that they are executed immediately::
 
     >>> sh.not_piped
-    ['cp', 'mkdir', 'mv', 'rm', 'rsync', 'scp', 'touch']
+    ['cp', 'mkdir', 'mv', 'rm', 'touch', 'mv']
 
 By default a command is piped. But you can avoid this::
 
@@ -67,10 +71,15 @@ Chut use a copy of ``os.environ`` but you can modify values::
   >>> from chut import env
   >>> env.path = '/usr/bin:/usr/local/bin'
   >>> env.path
-  '/usr/bin:/usr/local/bin'
+  ['/usr/bin', '/usr/local/bin']
   >>> env.path = ['/usr/bin', '/usr/local/bin']
   >>> env.path
-  '/usr/bin:/usr/local/bin'
+  ['/usr/bin', '/usr/local/bin']
+  >>> env.path += ['bin']
+  >>> env.path
+  ['/usr/bin', '/usr/local/bin', 'bin']
+
+Only ``path`` return a list. Other values return a string.
 
 ..
   >>> env.path = env.old_path
@@ -95,6 +104,16 @@ You can use the test command::
     >>> # test -x chut/scripts.py
     >>> if test.x('chut/scripts.py'):
     ...     print('chut/scripts.py is executable')
+
+Run a large amount of processes
+===============================
+
+You can use the :meth:`chut.Pipe.map` method to run a large amount of commands with the
+same binary. Arguments must be a list of string or list::
+
+    >>> results = sh.ls.map(['.', ['-l', '.']])
+    >>> [res.succeeded for res in results]
+    [True, True]
 
 Debugging
 ==========

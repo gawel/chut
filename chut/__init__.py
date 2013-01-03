@@ -14,6 +14,18 @@ from subprocess import STDOUT
 from copy import deepcopy
 from contextlib import contextmanager
 
+__all__ = [
+    'console_script', 'sh', 'env', 'stdin', 'test',
+    'ls', 'cat', 'grep', 'find', 'cut', 'tr', 'head', 'tail', 'sed', 'awk',
+    'nc', 'ping', 'nmap', 'hostname', 'host', 'scp', 'rsync', 'wget', 'curl',
+    'cd', 'mkdir', 'rm', 'rmdir', 'mv', 'which', 'mktemp', 'echo',
+    'tar', 'gzip', 'gunzip', 'zip', 'unzip'
+    'vlc', 'ffmpeg', 'convert',
+    'virtualenv', 'pip',
+    'ssh', 'sudo',
+    'path', 'pwd',  # path is posixpath, pwd return os.getcwd()
+]
+
 log = logging.getLogger('chut')
 
 aliases = dict(
@@ -38,7 +50,7 @@ def console_script(func):
         else:
             docopt = sys.modules['docopt'] # NOQA
         if isinstance(arguments, list):
-            arguments = docopt.docopt(doc, args=arguments)
+            arguments = docopt.docopt(doc, argv=arguments)
             return func(arguments)
         else:
             arguments = docopt.docopt(doc, help=True)
@@ -65,7 +77,10 @@ class Environ(dict):
     """Manage os.environ"""
 
     def __getattr__(self, attr):
-        return self.get(attr.upper(), None)
+        value = self.get(attr.upper(), None)
+        if attr.lower() in ('path',):
+            return value.split(os.pathsep)
+        return value
 
     def __setattr__(self, attr, value):
         if isinstance(value, (list, tuple)):
@@ -107,9 +122,9 @@ class Pipe(object):
             self._binary = kwargs.pop('binary')
         if 'pipe' in kwargs:
             if not kwargs.pop('pipe'):
-                self.__call__()
+                self > 2
         elif not self._pipe:
-            self.__call__()
+            self > 2
 
     @property
     def returncodes(self):
@@ -474,11 +489,11 @@ class PyPipe(Pipe):
         return self.func(self.stdin)
 
     def __deepcopy__(self, *args):
-        return ch.wraps(self.func)
+        return sh.wraps(self.func)
 
 
 class Base(object):
-    not_piped = ['rm', 'mkdir', 'cp', 'touch', 'mv', 'scp', 'rsync']
+    not_piped = ['rm', 'mkdir', 'cp', 'touch', 'mv']
     not_piped = sorted([str(c) for c in not_piped])
 
     def __init__(self, name, *cmd_args):
@@ -515,8 +530,7 @@ class Base(object):
 
 class Chut(Base):
 
-    STDOUT = S = 1
-    STDERR = 2
+    path = posixpath
 
     def wraps(self, func):
         return type(func.__name__, (PyPipe,), {'func': staticmethod(func)})()
@@ -536,9 +550,17 @@ class Chut(Base):
         return pipe(*args, **kwargs)
 
     def cd(self, directory):
+        """Change the current directory"""
         if self.__name__ not in ('sh', 'sudo'):
             raise ImportError('You can only run cd in local commands')
         os.chdir(directory)
+        env.pwd = directory
+
+    def pwd(self):
+        """return os.path.abspath(os.getcwd())"""
+        if self.__name__ not in ('sh', 'sudo'):
+            raise ImportError('You can only use pwd in local commands')
+        return os.path.abspath(os.getcwd())
 
     def stdin(self, value):
         return Stdin(value)
@@ -601,7 +623,10 @@ class ModuleWrapper(types.ModuleType):
 
     def __getattr__(self, attr):
         if attr == '__all__':
-            raise ImportError('You cant import things that does not exist')
+            if self.__name__ == 'chut':
+                return [str(c) for c in __all__]
+            else:
+                raise ImportError('You cant import things that does not exist')
         if hasattr(self.mod, attr):
             return getattr(self.mod, attr)
         else:
@@ -611,7 +636,7 @@ class ModuleWrapper(types.ModuleType):
 
 
 env = Environ(os.environ.copy())
-ch = Chut('sh')
+sh = Chut('sh')
 sudo = Chut('sudo', '-s')
 test = Command('test')
 
@@ -633,7 +658,7 @@ else:
 
 
 def wraps_module(mod):
-    sys.modules['chut'] = ModuleWrapper(mod, ch, 'chut')
+    sys.modules['chut'] = ModuleWrapper(mod, sh, 'chut')
     sys.modules['chut.sudo'] = ModuleWrapper(mod, sudo, 'sudo')
 
 if __name__ != '__main__':

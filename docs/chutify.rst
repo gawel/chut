@@ -32,7 +32,6 @@ Write a file with a function in it::
 Then run chutify on it::
 
     >>> print(ch.chutify('myscript.py', combine_stderr=True))
-    writing dist/scripts/my-script
     chmod +x dist/scripts/my-script
 
 And check the result in ``dist/scripts``::

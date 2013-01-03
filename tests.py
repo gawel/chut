@@ -2,36 +2,36 @@
 from __future__ import unicode_literals
 import six
 import unittest
-from chut import ch
+from chut import sh
 
 
 class Chut(unittest.TestCase):
 
     def test_redirect_binary(self):
-        with ch.pipes(ch.cat(__file__)) as cmd:
+        with sh.pipes(sh.cat(__file__)) as cmd:
             cmd > 'tmp'
-        ls = str(ch.ls('-l tmp'))
+        ls = str(sh.ls('-l tmp'))
 
-        with ch.pipes(ch.cat(__file__)) as cmd:
+        with sh.pipes(sh.cat(__file__)) as cmd:
             cmd >> 'tmp'
-        self.assertFalse(ls == str(ch.ls('-l tmp')))
-        ch.rm('tmp')
+        self.assertFalse(ls == str(sh.ls('-l tmp')))
+        sh.rm('tmp')
 
     def test_redirect_python(self):
 
-        @ch.wraps
+        @sh.wraps
         def grep(stdin):
             for line in stdin:
                 if b'__' in line:
                     yield line
 
-        pipe = ch.cat(__file__) | grep
-        with ch.pipes(pipe) as cmd:
+        pipe = sh.cat(__file__) | grep
+        with sh.pipes(pipe) as cmd:
             cmd > 'tmp'
-        ls = str(ch.ls('-l tmp'))
-        with ch.pipes(pipe) as cmd:
+        ls = str(sh.ls('-l tmp'))
+        with sh.pipes(pipe) as cmd:
             cmd >> 'tmp'
-        self.assertFalse(ls == str(ch.ls('-l tmp')), ls)
+        self.assertFalse(ls == str(sh.ls('-l tmp')), ls)
 
     def test_stdin(self):
         content = open(__file__).read().strip()
@@ -40,25 +40,25 @@ class Chut(unittest.TestCase):
         else:
             bcontent = content
         self.assertEqual(content,
-                         str(ch.stdin(bcontent) | ch.cat('-')))
+                         str(sh.stdin(bcontent) | sh.cat('-')))
         self.assertEqual(content,
-                         str(ch.stdin(open(__file__, 'rb')) | ch.cat('-')))
+                         str(sh.stdin(open(__file__, 'rb')) | sh.cat('-')))
 
     def test_redirect_stdin(self):
-        ch.stdin(b'blah') > 'tmp'
-        self.assertEqual(str(ch.cat('tmp')), 'blah')
+        sh.stdin(b'blah') > 'tmp'
+        self.assertEqual(str(sh.cat('tmp')), 'blah')
 
-        ch.stdin(b'blah') >> 'tmp'
-        self.assertEqual(str(ch.cat('tmp')), 'blahblah')
+        sh.stdin(b'blah') >> 'tmp'
+        self.assertEqual(str(sh.cat('tmp')), 'blahblah')
 
     def test_stdin2(self):
-        head = str(ch.stdin(open(__file__, 'rb'))
-                   | ch.cat('-')
-                   | ch.head('-n1'))
+        head = str(sh.stdin(open(__file__, 'rb'))
+                   | sh.cat('-')
+                   | sh.head('-n1'))
         self.assertTrue(len(head) > 1, head)
 
     def test_raise(self):
-        self.assertRaises(OSError, str, ch.zero_command())
+        self.assertRaises(OSError, str, sh.zero_command())
 
     def tearDown(self):
-        ch.rm('-f tmp')
+        sh.rm('-f tmp')

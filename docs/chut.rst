@@ -2,6 +2,14 @@
 Internals
 ==========
 
+Import
+======
+
+Those elements are imported when you use ``from chut import *``:
+
+.. literalinclude:: ../chut/__init__.py
+   :lines: 17-29
+
 Pipe
 ====
 
