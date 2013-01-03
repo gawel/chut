@@ -240,7 +240,7 @@ class Pipe(object):
         return stdin
 
     @classmethod
-    def map(cls, template, args,
+    def map(cls, args,
             pool_size=None, stop_on_failure=False, **kwargs):
         """Run a batch of the same command and manage a pool of processes for
         you"""
@@ -258,7 +258,10 @@ class Pipe(object):
         out_index = 0
         while args or processes:
             if args and len(processes) < pool_size:
-                cmd = cls(template % args.pop(0))
+                a = args.pop(0)
+                if not isinstance(a, list):
+                    a = [a]
+                cmd = cls(*a)
                 a = cmd.command_line(cmd.kwargs.get('shell', False))
                 processes.append((index, Popen(a, **kw)))
                 index += 1

@@ -56,7 +56,7 @@ Redirect both stdout and stderr to stdout::
 
 Run many command with a pool of processes::
 
-    >>> [ret.succeeded for ret in sh.ls.map('%s', ['.', '/tmp'])]
+    >>> [ret.succeeded for ret in sh.ls.map(['.', ['-l', '/tmp']])]
     [True, True]
 
 Use docopt to write a console script. This script will take an iface as
