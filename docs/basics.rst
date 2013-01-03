@@ -22,7 +22,7 @@ But you can also import some specific commands::
 
 Or import "all" commands. Where "all" is a ``unexaustive set`` of commands::
 
-    >>> from chut import *
+    >>> from chut import *  # doctest: +SKIP
 
 
 Exceptions
@@ -33,7 +33,7 @@ The ``cd`` command use python ``os.chdir()``
 Some commands do not use a pipe by default. This mean that they are executed immediately::
 
     >>> sh.not_piped
-    ['cp', 'mkdir', 'mv', 'rm', 'touch', 'mv']
+    ['cp', 'mkdir', 'mv', 'rm', 'touch']
 
 By default a command is piped. But you can avoid this::
 
