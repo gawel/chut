@@ -2,13 +2,17 @@
 Internals
 ==========
 
-Import
-======
+.. _imports:
+
+Imports
+=======
 
 Those elements are imported when you use ``from chut import *``:
 
 .. literalinclude:: ../chut/__init__.py
-   :lines: 17-29
+   :lines: 17-32
+
+Also noticed that commands which don't use pipes are listed here.
 
 Pipe
 ====

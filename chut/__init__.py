@@ -18,13 +18,17 @@ __all__ = [
     'console_script', 'sh', 'env', 'stdin', 'test',
     'ls', 'cat', 'grep', 'find', 'cut', 'tr', 'head', 'tail', 'sed', 'awk',
     'nc', 'ping', 'nmap', 'hostname', 'host', 'scp', 'rsync', 'wget', 'curl',
-    'cd', 'mkdir', 'rm', 'rmdir', 'mv', 'which', 'mktemp', 'echo',
-    'tar', 'gzip', 'gunzip', 'zip', 'unzip'
+    'cd', 'which', 'mktemp', 'echo', 'wc',
+    'tar', 'gzip', 'gunzip', 'zip', 'unzip',
     'vlc', 'ffmpeg', 'convert',
     'virtualenv', 'pip',
     'ssh', 'sudo',
     'path', 'pwd',  # path is posixpath, pwd return os.getcwd()
 ]
+
+__not_piped__ = ['chmod', 'cp', 'mkdir', 'mv', 'rm', 'rmdir', 'touch']
+
+__all__ += __not_piped__
 
 log = logging.getLogger('chut')
 
@@ -44,11 +48,7 @@ def console_script(func):
         name = func.__name__.replace('_', '-')
         doc = doc.replace('%prog', name).strip()
         doc = doc.replace('\n    ', '\n')
-        # take care if a script is chutified
-        if 'docopt' not in sys.modules:
-            import docopt
-        else:
-            docopt = sys.modules['docopt'] # NOQA
+        import docopt
         if isinstance(arguments, list):
             arguments = docopt.docopt(doc, argv=arguments)
             return func(arguments)
@@ -505,8 +505,7 @@ class PyPipe(Pipe):
 
 
 class Base(object):
-    not_piped = ['rm', 'mkdir', 'cp', 'touch', 'mv', 'chmod']
-    not_piped = sorted([str(c) for c in not_piped])
+    not_piped = [str(c) for c in __not_piped__]
 
     def __init__(self, name, *cmd_args):
         self.__name__ = name
