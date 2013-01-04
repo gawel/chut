@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 import os
 import sys
 import six
@@ -69,8 +69,8 @@ def check_sudo():
     whoami = Popen(args, env=env, **kwargs)
     whoami.wait()
     whoami = whoami.stdout.read().strip()
-    if whoami != 'root':
-        raise OSError('Not able to run sudo')
+    if whoami != six.b('root'):
+        raise OSError('Not able to run sudo.')
 
 
 class Environ(dict):
@@ -104,6 +104,8 @@ class Pipe(object):
     _sys_stderr = sys.stderr
 
     def __init__(self, *args, **kwargs):
+        self._done = False
+        self._stdout = None
         self._stderr = None
         self.args = list(args)
         self.previous = None
@@ -122,9 +124,15 @@ class Pipe(object):
             self._binary = kwargs.pop('binary')
         if 'pipe' in kwargs:
             if not kwargs.pop('pipe'):
-                self > 2
+                self._call_pipe()
         elif not self._pipe:
-            self > 2
+            self._call_pipe()
+
+    def _call_pipe(self):
+        self._done = True
+        ret = self.__call__()
+        if ret.failed:
+            print(ret.stderr, file=sys.stderr)
 
     @property
     def returncodes(self):
@@ -248,7 +256,7 @@ class Pipe(object):
                 try:
                     p = Popen(args, **kwargs)
                 except OSError:
-                    self._raise(args, kwargs)
+                    self._raise()
 
                 self.processes.append(p)
                 stdin = p.stdout
@@ -278,9 +286,9 @@ class Pipe(object):
                     a = [a]
                 cmd = cls(*a)
                 a = cmd.command_line(cmd.kwargs.get('shell', False))
-                processes.append((index, Popen(a, **kw)))
+                processes.append((index, cmd, Popen(a, **kw)))
                 index += 1
-            for i, p in processes:
+            for i, cmd, p in processes:
                 result = p.poll()
                 if result is not None:
                     output = Stdout(p.stdout.read())
@@ -289,16 +297,16 @@ class Pipe(object):
                     output.failed = bool(result)
                     output.succeeded = not output.failed
                     results[i] = output
-                    processes.remove((i, p))
+                    processes.remove((i, cmd, p))
                     if out_index == i:
                         out_index += 1
                         yield results[i]
                     if result > 0 and stop_on_failure:
                         args = None
-                        for index, p in processes:
+                        for index, cmd, p in processes:
                             if p.poll() is None:
                                 p.kill()
-                        raise OSError(i, output.stderr)
+                        cmd._raise(output=output)
             time.sleep(.1)
         if out_index < len(results):
             yield results[out_index]
@@ -321,6 +329,8 @@ class Pipe(object):
             yield self._decode(line)
 
     def __call__(self, **kwargs):
+        if self._done and self._stdout is not None:
+            return self._stdout
         for cmd in self.commands:
             if kwargs.get('shell'):
                 cmd.kwargs['shell'] = True
@@ -335,7 +345,10 @@ class Pipe(object):
             output = self._decode(output)
         else:
             output = ''
-        return self._get_stdout(output)
+        output = self._get_stdout(output)
+        if self._done:
+            self._stdout = output
+        return output
 
     __str__ = __call__
 
@@ -385,8 +398,7 @@ class Pipe(object):
 
     def _write(self, filename, mode):
         if isinstance(filename, int):
-            self.kwargs['stderr'] = STDOUT
-            if filename in (2, 22):
+            if filename == 2:
                 fd = self._sys_stderr
             else:
                 fd = self._sys_stdout
@@ -395,7 +407,7 @@ class Pipe(object):
             with open(filename, mode) as fd:
                 output = self._write_to(fd)
         if output.failed:
-            raise OSError('Command exited with codes %s' % output.returncodes)
+            self._raise(output=output)
         return output
 
     def _decode(self, output):
@@ -413,14 +425,14 @@ class Pipe(object):
         output.succeeded = not output.failed
         return output
 
-    def _raise(self, args, kwargs):
-        if isinstance(args, list):
-            args = ' '.join(args)
-        env_ = kwargs.pop('env')
-        log.debug('Error while running Popen(%r, **%r)',
-                  args, kwargs)
-        kwargs['env'] = env_
-        raise OSError(args)
+    def _raise(self, output=None):
+        if not log.handlers:
+            logging.basicConfig(stream=sys.stderr)
+        if output is not None:
+            if output.stderr:
+                log.error(output.stderr)
+            raise OSError(self.commands_line, output.stderr)
+        raise OSError(self.commands_line)
 
 
 class Stdin(Pipe):
@@ -493,7 +505,7 @@ class PyPipe(Pipe):
 
 
 class Base(object):
-    not_piped = ['rm', 'mkdir', 'cp', 'touch', 'mv']
+    not_piped = ['rm', 'mkdir', 'cp', 'touch', 'mv', 'chmod']
     not_piped = sorted([str(c) for c in not_piped])
 
     def __init__(self, name, *cmd_args):
@@ -553,6 +565,7 @@ class Chut(Base):
         """Change the current directory"""
         if self.__name__ not in ('sh', 'sudo'):
             raise ImportError('You can only run cd in local commands')
+        directory = os.path.realpath(directory)
         os.chdir(directory)
         env.pwd = directory
 
@@ -639,22 +652,6 @@ env = Environ(os.environ.copy())
 sh = Chut('sh')
 sudo = Chut('sudo', '-s')
 test = Command('test')
-
-try:
-    import fabric.operations
-except ImportError:
-    pass
-else:
-    def _run_command(command, *args, **kwargs):
-        if hasattr(command, '_chut'):
-            new_command = command.commands_line
-            if isinstance(new_command, property):
-                new_command = command().commands_line
-        else:
-            new_command = command
-        return fab_run_command(new_command, *args, **kwargs)
-    fab_run_command = fabric.operations._run_command
-    fabric.operations._run_command = _run_command
 
 
 def wraps_module(mod):

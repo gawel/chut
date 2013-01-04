@@ -2,10 +2,19 @@
 from __future__ import unicode_literals
 import six
 import unittest
-from chut import sh
+import chut as sh
 
 
 class Chut(unittest.TestCase):
+
+    def test_slices(self):
+        pipe = sh.cat('tmp') | sh.grep('tmp') | sh.wc('-l')
+        self.assertEqual(pipe[0:1]._binary, 'cat')
+        self.assertEqual(pipe.__getitem__(slice(0, 1))._binary, 'cat')
+        self.assertEqual(pipe.__getslice__(0, 1)._binary, 'cat')
+        self.assertEqual(pipe[1:]._binary, 'wc')
+        self.assertEqual(pipe.__getitem__(slice(1, 3))._binary, 'wc')
+        self.assertEqual(pipe.__getslice__(1, 3)._binary, 'wc')
 
     def test_redirect_binary(self):
         with sh.pipes(sh.cat(__file__)) as cmd:
@@ -60,5 +69,35 @@ class Chut(unittest.TestCase):
     def test_raise(self):
         self.assertRaises(OSError, str, sh.zero_command())
 
+    def test_sudo(self):
+        sh.aliases['sudo'] = sh.path.join(sh.pwd(), 'sudo')
+        old_path = sh.env.path
+        sh.env.path = []
+        self.assertRaises(OSError, sh.check_sudo)
+        sh.env.path = old_path
+
+        sh.stdin(six.b('#!/bin/bash\necho root')) > 'sudo'
+        self.assertEqual(sh.chmod('+x sudo').succeeded, True)
+        self.assertEqual(sh.check_sudo(), None)
+
+    def test_cd(self):
+        pwd = sh.pwd()
+        sh.cd('..')
+        self.assertNotEqual(pwd, sh.env.pwd)
+        self.assertEqual(sh.pwd(), sh.env.pwd)
+        sh.cd(pwd)
+
+    def test_console_script(self):
+        def f(args):
+            return 1
+        f = sh.console_script(f)
+        self.assertRaises(SystemExit, f)
+        self.assertEqual(f([]), 1)
+
+    def test_map(self):
+        self.assertRaises(OSError, list,
+                          sh.rm.map(['/chut'], stop_on_failure=True))
+
     def tearDown(self):
         sh.rm('-f tmp')
+        sh.rm('-f sudo')

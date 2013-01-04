@@ -33,7 +33,7 @@ The ``cd`` command use python ``os.chdir()``
 Some commands do not use a pipe by default. This mean that they are executed immediately::
 
     >>> sh.not_piped
-    ['cp', 'mkdir', 'mv', 'rm', 'touch']
+    ['chmod', 'cp', 'mkdir', 'mv', 'rm', 'touch']
 
 By default a command is piped. But you can avoid this::
 
