@@ -7,6 +7,28 @@ import chut as sh
 
 class Chut(unittest.TestCase):
 
+    __file__ = __file__.replace('.pyc', '.py')
+
+    def test_output(self):
+        self.assertEqual(sh.rm('/chut').succeeded, False)
+        self.assertEqual(sh.rm('/chut').failed, True)
+        self.assertTrue(len(sh.rm('/chut').stderr) >= 0)
+
+    def test_repr(self):
+        self.assertEqual(repr(sh.stdin(six.b('')) | sh.cat('-')),
+                         repr(str('stdin | cat -')))
+
+        @sh.wraps
+        def w():
+            pass
+
+        self.assertEqual(repr(sh.cat('-') | w),
+                         repr(str('cat - | w()')))
+
+    def test_environ(self):
+        env = sh.env(tmp='tmp')
+        self.assertEqual(env.tmp, 'tmp')
+
     def test_slices(self):
         pipe = sh.cat('tmp') | sh.grep('tmp') | sh.wc('-l')
         self.assertEqual(pipe[0:1]._binary, 'cat')
@@ -15,6 +37,8 @@ class Chut(unittest.TestCase):
         self.assertEqual(pipe[1:]._binary, 'wc')
         self.assertEqual(pipe.__getitem__(slice(1, 3))._binary, 'wc')
         self.assertEqual(pipe.__getslice__(1, 3)._binary, 'wc')
+
+        self.assertRaises(KeyError, pipe.__getitem__, 1)
 
     def test_redirect_binary(self):
         with sh.pipes(sh.cat(__file__)) as cmd:
@@ -61,10 +85,11 @@ class Chut(unittest.TestCase):
         self.assertEqual(str(sh.cat('tmp')), 'blahblah')
 
     def test_stdin2(self):
-        head = str(sh.stdin(open(__file__, 'rb'))
+        head = str(sh.stdin(open(self.__file__, 'rb'))
                    | sh.cat('-')
                    | sh.head('-n1'))
         self.assertTrue(len(head) > 1, head)
+        self.assertTrue(len(head) > 2, head)
 
     def test_raise(self):
         self.assertRaises(OSError, str, sh.zero_command())
@@ -79,6 +104,11 @@ class Chut(unittest.TestCase):
         sh.stdin(six.b('#!/bin/bash\necho root')) > 'sudo'
         self.assertEqual(sh.chmod('+x sudo').succeeded, True)
         self.assertEqual(sh.check_sudo(), None)
+
+        self.assertTrue(len(list(sh.sudo.ls('.'))) > 0)
+
+        sh.stdin(six.b('#!/bin/bash\necho gawel')) > 'sudo'
+        self.assertRaises(OSError, sh.check_sudo)
 
     def test_cd(self):
         pwd = sh.pwd()
@@ -97,6 +127,12 @@ class Chut(unittest.TestCase):
     def test_map(self):
         self.assertRaises(OSError, list,
                           sh.rm.map(['/chut'], stop_on_failure=True))
+
+    def test_call_opts(self):
+        self.assertEqual(str(sh.ls('.')), str(sh.ls('.', shell=True)))
+        self.assertEqual(str(sh.ls('.')), str(sh.ls('.')(shell=True)))
+        self.assertEqual(str(sh.ls('.')), str(sh.ls('.', combine_stderr=True)))
+        self.assertEqual(str(sh.ls('.')), str(sh.ls('.')(combine_stderr=True)))
 
     def tearDown(self):
         sh.rm('-f tmp')
