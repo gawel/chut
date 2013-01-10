@@ -29,7 +29,7 @@ Import the shell::
 
     >>> import chut as sh
 
-Get a file content if he contains "Chut"::
+Get a file content if it contains "Chut"::
 
     >>> grep_chut = sh.cat('README.rst') | sh.grep('Chut')
     >>> if grep_chut:
@@ -60,7 +60,7 @@ Run many command with a pool of processes::
     [True, True]
 
 Use docopt to write a console script. This script will take an iface as
-argument and return a code 1 if no addresses are found::
+argument and return a code 1 if no address is found::
 
     >>> @sh.console_script
     ... def got_inet_addr(args):
