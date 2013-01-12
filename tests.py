@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-import six
-import unittest
+from chut.recipe import Recipe
+from chut.scripts import chutify
 import chut as sh
+import unittest
+import six
+import os
 
 
 class Chut(unittest.TestCase):
@@ -123,6 +126,22 @@ class Chut(unittest.TestCase):
         f = sh.console_script(f)
         self.assertRaises(SystemExit, f)
         self.assertEqual(f([]), 1)
+
+    def test_generate(self):
+        self.assertEqual(sh.generate('chut/scripts.py'), 0)
+
+    def test_chutify(self):
+        self.assertEqual(chutify(['chut/scripts.py']), 0)
+        self.assertEqual(chutify(['.']), 0)
+        self.assertEqual(chutify(['.', '-l']), 0)
+
+    def test_recipe(self):
+        r = Recipe({'buildout': {'directory': os.getcwd()}},
+                    'chut', {'run': 'ls\nls .\n '})
+        self.assertEqual(r.install(), ())
+        r = Recipe({'buildout': {'directory': os.getcwd()}},
+                    'chut', {})
+        self.assertEqual(r.update(), ())
 
     def test_map(self):
         self.assertRaises(OSError, list,

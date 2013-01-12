@@ -13,14 +13,14 @@ class Recipe(object):
         self.options['destination'] = dest
 
     def scripts(self):
-        import chut.scripts
+        import chut as sh
         args = ['--destination', self.options.get('destination')]
         for line in self.options.get('locations', '.').split():
-            chut.scripts.chutify(args + [line])
+            sh.chutify(args + [line])
 
     def run(self, update=False):
         import chut as sh
-        if update:
+        if update:  # pragma: no cover
             sh.env.buildout_update = '1'
         sh.env.path += os.pathsep + self.options.get('destination')
         run = self.options.get('run', '')

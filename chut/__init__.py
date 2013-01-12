@@ -4,8 +4,10 @@ import sys
 import six
 import time
 import types
-import logging
+import base64
 import shutil
+import inspect
+import logging
 import functools
 import posixpath
 from subprocess import Popen
@@ -37,41 +39,6 @@ aliases = dict(
     sudo='/usr/bin/sudo',
     ssh='ssh',
   )
-
-
-def _console_script(func, **docopts):
-    @functools.wraps(func)
-    def wrapper(arguments=None):
-        if 'help' not in docopts:
-            docopts['help'] = True
-        if 'doc' not in docopts:
-            doc = getattr(func, '__doc__', None)
-        else:
-            doc = docopts.pop('doc')
-        if doc is None:
-            doc = 'Usage: %prog'
-        name = func.__name__.replace('_', '-')
-        doc = doc.replace('%prog', name).strip()
-        doc = doc.replace('\n    ', '\n')
-        import docopt
-        if isinstance(arguments, list):
-            docopts['argv'] = arguments
-            arguments = docopt.docopt(doc, **docopts)
-            return func(arguments)
-        else:
-            arguments = docopt.docopt(doc, **docopts)
-            sys.exit(func(arguments))
-    wrapper.console_script = True
-    return wrapper
-
-
-def console_script(*args, **docopts):
-    if not args:
-        def waiting_for_func(func):
-            return _console_script(func, **docopts)
-        return waiting_for_func
-    else:
-        return _console_script(args[0])
 
 
 def check_sudo():
@@ -669,6 +636,130 @@ test = Command('test')
 def wraps_module(mod):
     sys.modules['chut'] = ModuleWrapper(mod, sh, 'chut')
     sys.modules['chut.sudo'] = ModuleWrapper(mod, sudo, 'sudo')
+
+#####################
+# Script generation #
+#####################
+
+
+def console_script(*args, **docopts):
+    def _console_script(func, **docopts):
+        @functools.wraps(func)
+        def wrapper(arguments=None):
+            if 'help' not in docopts:
+                docopts['help'] = True
+            if 'doc' not in docopts:
+                doc = getattr(func, '__doc__', None)
+            else:
+                doc = docopts.pop('doc')
+            if doc is None:
+                doc = 'Usage: %prog'
+            name = func.__name__.replace('_', '-')
+            doc = doc.replace('%prog', name).strip()
+            doc = doc.replace('\n    ', '\n')
+            import docopt
+            if isinstance(arguments, list):
+                docopts['argv'] = arguments
+                arguments = docopt.docopt(doc, **docopts)
+                return func(arguments)
+            else:
+                arguments = docopt.docopt(doc, **docopts)
+                sys.exit(func(arguments))
+        wrapper.console_script = True
+        return wrapper
+    if not args:
+        def waiting_for_func(func):
+            return _console_script(func, **docopts)
+        return waiting_for_func
+    else:
+        return _console_script(args[0])
+
+
+def generate(filename, arguments=None):
+    if arguments is None:
+        arguments = {}
+    if not os.path.isfile(filename):
+        mod = __import__(filename, globals(), locals(), [''])
+        filename = mod.__file__
+        name = mod.__name__
+    else:
+        dirname = os.path.dirname(filename)
+        sys.path.insert(0, dirname)
+        name = inspect.getmodulename(filename)
+        mod = __import__(name)
+
+    filenames = []
+    for k, v in mod.__dict__.items():
+        if getattr(v, 'console_script', False) is True:
+            filenames.append(k)
+
+    if arguments.get('--list-entry-points'):
+        for name in filenames:
+            print(('%s = %s:%s' % (name.replace('_', '-'),
+                                   mod.__name__, name)))
+        return 0
+
+    dest = os.path.expanduser(arguments.get('--destination', 'dist/scripts'))
+    sh.mkdir('-p', dest)
+
+    def encode_module(mod):
+        if not hasattr(mod, '__file__'):
+            mod = __import__(mod)
+        data = inspect.getsource(mod)
+        data = base64.encodestring(six.b(data))
+        return 'mods.append((%r, %r))\n' % (str(mod.__name__), data)
+
+    modules = [
+        'six', 'docopt', 'ConfigObject', sys.modules[__name__]
+    ] + arguments.get('<MODULE>', [])
+    modules = ''.join([encode_module(m) for m in modules])
+
+    for name in filenames:
+        script = os.path.join(dest, name.replace('_', '-'))
+        with open(script, 'w') as fd:
+            fd.write(SCRIPT_HEADER + modules + LOAD_MODULES)
+            fd.write(inspect.getsource(mod).replace('__main__',
+                                                    '__chutified__'))
+            fd.write("if __name__ == '__main__':\n    %s()\n" % name)
+        executable = sh.chmod('+x', script)
+        if executable:
+            print(executable.commands_line)
+        else:
+            print('failed to generate %s' % script)
+    return 0
+
+
+SCRIPT_HEADER = '''
+#!/usr/bin/env python
+import base64, json, types, sys
+PY3 = sys.version_info[0] == 3
+mods = []
+'''.lstrip()
+
+LOAD_MODULES = '''
+for name, code in mods:
+    if PY3:
+        if isinstance(code, str):
+            code = code.encode('utf-8')
+    else:
+        name = bytes(name)
+    code = base64.decodestring(code)
+    mod = types.ModuleType(name)
+    globs = dict()
+    if PY3:
+        if isinstance(code, bytes):
+            code = code.decode('utf-8')
+        exec(code, globs)
+    else:
+        exec('exec code in globs')
+    mod.__dict__.update(globs)
+    if name == 'chut':
+        mod.wraps_module(mod)
+    else:
+        sys.modules[name] = mod
+
+import six
+'''.lstrip()
 
 if __name__ != '__main__':
     mod = sys.modules[__name__]

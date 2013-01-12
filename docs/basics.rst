@@ -95,13 +95,13 @@ You can use the test command::
 
     >>> from chut import test
 
-    >>> # test -f chut/scripts.py
-    >>> bool(test.f('chut/scripts.py'))
+    >>> # test -f chut/recipe.py
+    >>> bool(test.f('chut/recipe.py'))
     True
 
-    >>> # test -x chut/scripts.py
-    >>> if test.x('chut/scripts.py'):
-    ...     print('chut/scripts.py is executable')
+    >>> # test -x chut/recipe.py
+    >>> if test.x('chut/recipe.py'):
+    ...     print('chut/recipe.py is executable')
 
 Run a large amount of processes
 ===============================

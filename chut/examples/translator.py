@@ -10,7 +10,7 @@ Usage: %prog [options] [-] [<text>...]
 
 This script use chut and casperjs to build an interactive translator
 
-Example usage:
+Examples:
 
     $ echo "hello" | translate -
     $ translate -l fr:en bonjour
