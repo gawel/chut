@@ -39,10 +39,15 @@ aliases = dict(
   )
 
 
-def console_script(func):
+def _console_script(func, **docopts):
     @functools.wraps(func)
     def wrapper(arguments=None):
-        doc = getattr(func, '__doc__', None)
+        if 'help' not in docopts:
+            docopts['help'] = True
+        if 'doc' not in docopts:
+            doc = getattr(func, '__doc__', None)
+        else:
+            doc = docopts.pop('doc')
         if doc is None:
             doc = 'Usage: %prog'
         name = func.__name__.replace('_', '-')
@@ -50,13 +55,23 @@ def console_script(func):
         doc = doc.replace('\n    ', '\n')
         import docopt
         if isinstance(arguments, list):
-            arguments = docopt.docopt(doc, argv=arguments)
+            docopts['argv'] = arguments
+            arguments = docopt.docopt(doc, **docopts)
             return func(arguments)
         else:
-            arguments = docopt.docopt(doc, help=True)
-            sys.exit(func(docopt.docopt(doc)))
+            arguments = docopt.docopt(doc, **docopts)
+            sys.exit(func(arguments))
     wrapper.console_script = True
     return wrapper
+
+
+def console_script(*args, **docopts):
+    if not args:
+        def waiting_for_func(func):
+            return _console_script(func, **docopts)
+        return waiting_for_func
+    else:
+        return _console_script(args[0])
 
 
 def check_sudo():
@@ -120,8 +135,6 @@ class Pipe(object):
         if 'combine_stderr' in kwargs:
             kwargs.pop('combine_stderr')
             kwargs['stderr'] = STDOUT
-        if 'binary' in kwargs:
-            self._binary = kwargs.pop('binary')
         if 'pipe' in kwargs:
             if not kwargs.pop('pipe'):
                 self._call_pipe()

@@ -6,13 +6,21 @@ import sys
 import os
 
 __doc__ = """
+Usage: %prog [options] [-] [<text>...]
+
 This script use chut and casperjs to build an interactive translator
 
-Example usage::
+Example usage:
 
     $ echo "hello" | translate -
     $ translate -l fr:en bonjour
     $ translate -i
+
+Options:
+
+    -l LANGS, --langs=LANGS     Langs [default: en:fr]
+    -i, --interactive           Translate line by line in interactive mode
+    -h, --help                  Show this help
 """
 
 SCRIPT = six.b("""
@@ -36,14 +44,8 @@ require('casper').create()
 """)
 
 
-@console_script
+@console_script(doc=__doc__)
 def translate(args):
-    """Usage: %prog [options] [-] [<text>...]
-
-    -l LANGS, --langs=LANGS     Langs [default: en:fr]
-    -i, --interactive           Translate line by line in interactive mode
-    -h, --help                  Show this help
-    """
     if not which('casperjs'):
         print('You must install casperjs first')
         return 1
