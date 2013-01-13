@@ -6,8 +6,8 @@ import os
 @sh.console_script
 def chutify(arguments):
     """
-    Usage: %prog [-d DIRNAME] <location> [<MODULE>...]
-           %prog <location> (-l | -h)
+    Usage: %prog [-d DIRNAME] [<location>] [<MODULE>...]
+           %prog [<location>] (-l | -h)
 
     Generate binary scripts from all @console_script contained in <location>
     <location> can be a directory, a python file or a dotted name.
@@ -16,7 +16,7 @@ def chutify(arguments):
     -d DIRNAME, --destination=DIRNAME  Destination [default: dist/scripts]
     -l, --list-entry-points            List console script entry points
     """
-    location = arguments['<location>']
+    location = arguments.get('<location>') or os.getcwd()
     location = os.path.expanduser(location)
     if os.path.isfile(location):
         sh.generate(location, arguments)
