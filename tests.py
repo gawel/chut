@@ -137,10 +137,11 @@ class Chut(unittest.TestCase):
 
     def test_recipe(self):
         r = Recipe({'buildout': {'directory': os.getcwd()}},
-                    'chut', {'run': 'ls\nls .\n '})
+                    'chut', {'destination': 'dist/scripts',
+                             'run': 'ls\nls .\n '})
         self.assertEqual(r.install(), ())
         r = Recipe({'buildout': {'directory': os.getcwd()}},
-                    'chut', {})
+                    'chut', {'destination': 'dist/scripts'})
         self.assertEqual(r.update(), ())
 
     def test_map(self):

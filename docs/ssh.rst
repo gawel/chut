@@ -24,6 +24,6 @@ Or on another server::
 You can use your ssh instance to get some remote file::
 
     >>> sh.rsync(srv1.join('~/p0rn'), '.', pipe=True)
-    'rsync gawel@srv:~/p0rn .'
+    'rsync gawel@srv:"~/p0rn" .'
 
 

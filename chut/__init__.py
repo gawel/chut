@@ -26,6 +26,7 @@ __all__ = [
     'virtualenv', 'pip',
     'ssh', 'sudo',
     'path', 'pwd',  # path is posixpath, pwd return os.getcwd()
+    'escape', 'e',  # e is escape()
 ]
 
 __not_piped__ = ['chmod', 'cp', 'mkdir', 'mv', 'rm', 'rmdir', 'touch']
@@ -53,6 +54,17 @@ def check_sudo():
     whoami = whoami.stdout.read().strip()
     if whoami != six.b('root'):
         raise OSError('Not able to run sudo.')
+
+
+def escape(value):
+    chars = "'[]() "
+    esc = '\\'
+    if isinstance(value, six.binary_type):
+        chars = chars.encode('ascii')
+        esc = esc.encode('ascii')
+    for c in chars:
+        value = value.replace(c, esc + c)
+    return value
 
 
 class Environ(dict):
@@ -580,7 +592,8 @@ class SSH(Base):
     """A ssh server"""
 
     def join(self, *args):
-        return '%s%s' % (self, posixpath.join(*args))
+        p = posixpath.join(*args)
+        return '%s"%s"' % (self, escape(p))
 
     @property
     def host(self):
@@ -631,6 +644,7 @@ env = Environ(os.environ.copy())
 sh = Chut('sh')
 sudo = Chut('sudo', '-s')
 test = Command('test')
+e = escape
 
 
 def wraps_module(mod):

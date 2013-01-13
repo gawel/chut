@@ -13,10 +13,10 @@ class Recipe(object):
         self.options['destination'] = dest
 
     def scripts(self):
-        import chut as sh
+        from chut.scripts import chutify
         args = ['--destination', self.options.get('destination')]
         for line in self.options.get('locations', '.').split():
-            sh.chutify(args + [line])
+            chutify(args + [line])
 
     def run(self, update=False):
         import chut as sh
