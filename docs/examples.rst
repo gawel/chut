@@ -18,6 +18,14 @@ translator
 
 Get the `standalone script <_static/binaries/translate>`_
 
+rfsync
+======
+
+.. literalinclude:: ../chut/examples/rfsync.py
+   :language: python
+
+Get the `standalone script <_static/binaries/rfsync>`_
+
 chutify-examples
 =================
 
