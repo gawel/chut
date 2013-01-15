@@ -57,7 +57,7 @@ def check_sudo():
 
 
 def escape(value):
-    chars = "'[]() "
+    chars = "!'[]() "
     esc = '\\'
     if isinstance(value, six.binary_type):
         chars = chars.encode('ascii')
@@ -183,8 +183,10 @@ class Pipe(object):
         if self._cmd_args[:1] == ['ssh']:
             cmd = '%s %s' % (binary, ' '.join(self.args))
             cmd = cmd.strip()
-            if ('|' in cmd or '>' in cmd) and shell:
-                cmd = repr(str(cmd))
+            for c in '\'"*<>|':
+                if c in cmd:
+                    cmd = repr(str(cmd))
+                    break
             args.append(cmd)
         else:
             args.extend(binary.split())
@@ -593,7 +595,12 @@ class SSH(Base):
 
     def join(self, *args):
         p = posixpath.join(*args)
-        return '%s"%s"' % (self, escape(p))
+        host = str(self)
+        quote = '"'
+        if isinstance(p, six.binary_type):
+            host = host.encode('ascii')
+            quote = quote.encode('ascii')
+        return host + quote + escape(p) + quote
 
     @property
     def host(self):
