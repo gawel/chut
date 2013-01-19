@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from chut import *  # NOQA
+import sys
 
 
 @console_script
