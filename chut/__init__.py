@@ -57,7 +57,7 @@ def check_sudo():
 
 
 def escape(value):
-    chars = "!'[]() "
+    chars = "|!`'[]() "
     esc = '\\'
     if isinstance(value, six.binary_type):
         chars = chars.encode('ascii')
