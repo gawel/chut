@@ -336,7 +336,7 @@ class Pipe(object):
 
     def __iter__(self):
         for line in self.stdout:
-            yield self._decode(line)
+            yield self._decode(line).rstrip('\n')
 
     def __call__(self, **kwargs):
         if self._done and self._stdout is not None:
@@ -501,7 +501,7 @@ class Stdout(str):
 
     @property
     def stdout(self):
-        return str(self)
+        return self
 
 
 class PyPipe(Pipe):
@@ -681,7 +681,7 @@ def wraps_module(mod):
 
 @contextmanager
 def requires(*requirements, **kwargs):
-    if '.tox/bin/' in sys.executable:
+    if '/.tox/' in sys.executable:
         venv = os.path.dirname(os.path.dirname(sys.executable))
     elif env.virtual_env:
         venv = env.virtual_env
