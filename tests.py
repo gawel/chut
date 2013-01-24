@@ -128,7 +128,8 @@ class Chut(unittest.TestCase):
         self.assertEqual(f([]), 1)
 
     def test_generate(self):
-        self.assertEqual(sh.generate('chut/scripts.py'), 0)
+        self.assertEqual(sh.generate('chut/scripts.py'),
+                         'dist/scripts/chutify')
 
     def test_chutify(self):
         self.assertEqual(chutify(['chut/scripts.py']), 0)
