@@ -679,16 +679,18 @@ def wraps_module(mod):
 #####################
 
 
+@contextmanager
 def requires(*requirements, **kwargs):
-    if env.chutification:
-        return
+    if '.tox/bin/' in sys.executable:
+        venv = os.path.dirname(os.path.dirname(sys.executable))
+    elif env.virtual_env:
+        venv = env.virtual_env
+    else:
+        venv = os.path.expanduser(kwargs.get('venv', '~/.chut/venv'))
     upgrade = '--upgrade-deps' in sys.argv
     if not env.pip_download_cache:
-        dirname = os.path.expanduser('~/.chut/cache')
-        if not test.d(dirname):
-            sh.mkdir('-p', dirname)
-        env.pip_download_cache = dirname
-    venv = os.path.expanduser(kwargs.get('venv', '~/.chut/venv'))
+        env.pip_download_cache = os.path.expanduser('~/.chut/cache')
+        sh.mkdir('-p', env.pip_download_cache)
     bin_dir = os.path.join(venv, 'bin')
     if bin_dir not in env.path:
         env.path = [bin_dir] + env.path
@@ -701,12 +703,13 @@ def requires(*requirements, **kwargs):
         python('-S /tmp/virtualenv.py', venv) > 1
         sh.rm('/tmp/virtualenv*', shell=True)
         sh.pip('install -Mq --timeout=5', *requirements) > 1
-    elif env.chut_upgrade or upgrade:
+    elif not env.chut_virtualenv and (env.chut_upgrade or upgrade):
         sh.pip('install -M --upgrade --timeout=5', *requirements) > 1
     executable = os.path.join(bin_dir, 'python')
     if not env.chut_virtualenv:
         env.chut_virtualenv = venv
         os.execve(executable, [executable] + sys.argv, env)
+    yield True
 
 
 def console_script(*args, **docopts):
@@ -746,7 +749,6 @@ def console_script(*args, **docopts):
 def generate(filename, arguments=None):
     """generate a script from a @console_script. arguments may contain some
     docopts like arguments"""
-    env.chutification = '1'
     if arguments is None:
         arguments = {}
     if not os.path.isfile(filename):
@@ -781,7 +783,7 @@ def generate(filename, arguments=None):
         # get source from files
         modules = [
             'six', 'docopt', 'ConfigObject', sys.modules[__name__]
-        ] + arguments.get('<MODULE>', [])
+        ]
         modules = ''.join([encode_module(m) for m in modules])
     else:
         # get source from _chut_modules
@@ -803,7 +805,6 @@ def generate(filename, arguments=None):
             scripts.append(script)
         else:
             print('failed to generate %s' % script)
-    del env.chutification
     return scripts
 
 

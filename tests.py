@@ -134,7 +134,6 @@ class Chut(unittest.TestCase):
     def test_chutify(self):
         self.assertEqual(chutify(['chut/scripts.py']), 0)
         self.assertEqual(chutify(['.']), 0)
-        self.assertEqual(chutify(['.', '-l']), 0)
 
     def test_recipe(self):
         r = Recipe({'buildout': {'directory': os.getcwd()}},

@@ -6,8 +6,8 @@ import os
 @sh.console_script
 def chutify(arguments):
     """
-    Usage: %prog [-d DIR] [--loop DELAY] [<location>] [<MODULE>...]
-           %prog [<location>] (-l | -h)
+    Usage: %prog [-d DIR] [--upgrade-deps] [--loop DELAY] [<location>]
+           %prog -h
 
     Generate binary scripts from all @console_script contained in <location>
     <location> can be a directory, a python file or a dotted name.
@@ -23,7 +23,6 @@ def chutify(arguments):
 
     -h, --help                 Print this help
     -d DIR, --destination=DIR  Destination [default: dist/scripts]
-    -l, --list-entry-points    List console script entry points
     --loop DELAY               Generate scripts over and over
     """
     config = sh.ini('.chut')
