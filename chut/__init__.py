@@ -14,10 +14,11 @@ from subprocess import Popen
 from subprocess import PIPE
 from subprocess import STDOUT
 from copy import deepcopy
+from ConfigObject import ConfigObject
 from contextlib import contextmanager
 
 __all__ = [
-    'console_script', 'sh', 'env', 'stdin', 'test',
+    'console_script', 'sh', 'env', 'ini' 'stdin', 'test',
     'ls', 'cat', 'grep', 'find', 'cut', 'tr', 'head', 'tail', 'sed', 'awk',
     'nc', 'ping', 'nmap', 'hostname', 'host', 'scp', 'rsync', 'wget', 'curl',
     'cd', 'which', 'mktemp', 'echo', 'wc',
@@ -65,6 +66,13 @@ def escape(value):
     for c in chars:
         value = value.replace(c, esc + c)
     return value
+
+
+def ini(filename, **defaults):
+    for k, v in env.items():
+        if isinstance(v, six.string_types):
+            defaults[k] = v
+    return ConfigObject(filename=filename, defaults=defaults)
 
 
 class Environ(dict):
@@ -728,12 +736,19 @@ def generate(filename, arguments=None):
             mod = __import__(mod)
         data = inspect.getsource(mod)
         data = base64.encodestring(six.b(data))
-        return 'mods.append((%r, %r))\n' % (str(mod.__name__), data)
+        return '_chut_modules.append((%r, %r))\n' % (str(mod.__name__), data)
 
-    modules = [
-        'six', 'docopt', 'ConfigObject', sys.modules[__name__]
-    ] + arguments.get('<MODULE>', [])
-    modules = ''.join([encode_module(m) for m in modules])
+    try:
+        _chut_modules = sys.modules['__main__']._chut_modules
+    except AttributeError:
+        modules = [
+            'six', 'docopt', 'ConfigObject', sys.modules[__name__]
+        ] + arguments.get('<MODULE>', [])
+        modules = ''.join([encode_module(m) for m in modules])
+    else:
+        modules = ''
+        for name, data in _chut_modules:
+            modules += '_chut_modules.append((%r, %r))\n' % (name, data)
 
     for name in filenames:
         script = os.path.join(dest, name.replace('_', '-'))
@@ -747,18 +762,18 @@ def generate(filename, arguments=None):
             print(executable.commands_line)
         else:
             print('failed to generate %s' % script)
-    return 0
+    return script
 
 
 SCRIPT_HEADER = '''
 #!/usr/bin/env python
 import base64, json, types, sys
 PY3 = sys.version_info[0] == 3
-mods = []
+_chut_modules = []
 '''.lstrip()
 
 LOAD_MODULES = '''
-for name, code in mods:
+for name, code in _chut_modules:
     if PY3:
         if isinstance(code, str):
             code = code.encode('utf-8')
