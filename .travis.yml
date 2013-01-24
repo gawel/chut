@@ -6,6 +6,8 @@ python:
 before_install:
  - "if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then sudo apt-get install python-nose; fi"
 install:
+ - pip install webob
+ - pip install waitress
  - python setup.py develop
 script: nosetests
 
