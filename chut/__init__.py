@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 import os
 import sys
 import six
+import zlib
 import time
 import types
 import base64
@@ -695,10 +696,9 @@ def requires(*requirements, **kwargs):
     if bin_dir not in env.path:
         env.path = [bin_dir] + env.path
     if not test.d(venv):
-        sh.wget(
-            '--no-check-certificate -qO /tmp/virtualenv.py',
-            'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
-            ) > 1
+        import urllib
+        url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
+        urllib.urlretrieve(url, '/tmp/virtualenv.py')
         sh[sys.executable]('-S /tmp/_virtualenv.py', venv) > 1
         sh.rm('/tmp/_virtualenv*', shell=True)
         print('Installing %s...' % ', '.join(requirements))
@@ -719,38 +719,49 @@ def requires(*requirements, **kwargs):
     yield True
 
 
-def console_script(*args, **docopts):
+class console_script(object):
     """A decorator to take care of sys.argv via docopt"""
-    def _console_script(func, **docopts):
-        @functools.wraps(func)
-        def wrapper(arguments=None):
-            if 'help' not in docopts:
-                docopts['help'] = True
-            if 'doc' not in docopts:
-                doc = getattr(func, '__doc__', None)
+
+    def __init__(self, *args, **opts):
+        self._console_script = True
+        self.docopts = opts
+        self.func = self.doc = None
+        self.wraps(args)
+
+    def wraps(self, args):
+        if args:
+            self.func = args[0]
+            functools.wraps(self.func)(self)
+            if 'help' not in self.docopts:
+                self.docopts['help'] = True
+            if 'doc' not in self.docopts:
+                doc = getattr(self.func, '__doc__', None)
             else:
-                doc = docopts.pop('doc')
+                doc = self.docopts.pop('doc')
             if doc is None:
                 doc = 'Usage: %prog'
-            name = func.__name__.replace('_', '-')
+            name = self.func.__name__.replace('_', '-')
             doc = doc.replace('%prog', name).strip()
             doc = doc.replace('\n    ', '\n')
-            import docopt
-            if isinstance(arguments, list):
-                docopts['argv'] = arguments
-                arguments = docopt.docopt(doc, **docopts)
-                return func(arguments)
-            else:
-                arguments = docopt.docopt(doc, **docopts)
-                sys.exit(func(arguments))
-        wrapper.console_script = True
-        return wrapper
-    if not args:
-        def waiting_for_func(func):
-            return _console_script(func, **docopts)
-        return waiting_for_func
-    else:
-        return _console_script(args[0])
+            self.doc = doc
+        return self
+
+    def main(self, arguments=None):
+        import docopt
+        ret = isinstance(arguments, list)
+        if ret:
+            self.docopts['argv'] = arguments
+        arguments = docopt.docopt(self.doc, **self.docopts)
+        res = self.func(arguments)
+        if ret:
+            return res
+        else:
+            sys.exit(res)
+
+    def __call__(self, *args, **kwargs):
+        if not self.func:
+            return self.wraps(args)
+        return self.main(*args, **kwargs)
 
 
 def generate(filename, args=None):
@@ -771,22 +782,24 @@ def generate(filename, args=None):
 
     console_scripts = []
     for k, v in mod.__dict__.items():
-        if getattr(v, 'console_script', False) is True:
+        if getattr(v, '_console_script', False) is True:
             console_scripts.append(k)
 
-    devel = args.get('--devel')
+    devel = args.get('--devel') or args.get('devel')
     if devel:
         dest = 'bin'
     else:
-        dest = os.path.expanduser(args.get('--destination', 'dist/scripts'))
+        dest = args.get('--destination') or args.get('destination')
+        dest = os.path.expanduser(dest or 'dist/scripts')
     sh.mkdir('-p', dest)
 
     def encode_module(mod):
         if not hasattr(mod, '__file__'):
             mod = __import__(mod)
         data = inspect.getsource(mod)
-        data = base64.encodestring(six.b(data))
-        return '_chut_modules.append((%r, %r))\n' % (str(mod.__name__), data)
+        data = base64.encodestring(zlib.compress(six.b(data)))
+        values = (str(mod.__name__), data)
+        return '_chut_modules.append((%r, %r))\n' % values
 
     try:
         # check if the script is already chutified
@@ -803,19 +816,24 @@ def generate(filename, args=None):
         for name, data in _chut_modules:
             modules += '_chut_modules.append((%r, %r))\n' % (name, data)
 
+    d = dict(version=repr(args.get('--version') or 'unknown'),
+             interpreter=args.get('--interpreter', 'python'))
+
     scripts = []
     for name in console_scripts:
         script = os.path.join(dest, name.replace('_', '-'))
         with open(script, 'w') as fd:
-            fd.write(SCRIPT_HEADER + modules + LOAD_MODULES)
+
+            fd.write(SCRIPT_HEADER % d + modules + LOAD_MODULES % d)
             if devel:
                 fd.write('sys.path.insert(0, "%s")\n' % dirname)
                 fd.write('import %s\n' % mod.__name__)
-                fd.write('%s.%s()\n' % (mod.__name__, name))
+                fd.write('if __name__ == "__main__":\n')
+                fd.write('    %s.%s()\n' % (mod.__name__, name))
             else:
                 fd.write(inspect.getsource(mod).replace('__main__',
                                                         '__chutified__'))
-                fd.write("if __name__ == '__main__':\n    %s()\n" % name)
+                fd.write("\nif __name__ == '__main__':\n    %s()\n" % name)
         executable = sh.chmod('+x', script)
         if executable:
             print(executable.commands_line)
@@ -826,8 +844,8 @@ def generate(filename, args=None):
 
 
 SCRIPT_HEADER = '''
-#!/usr/bin/env python
-import base64, json, types, sys
+#!/usr/bin/env %(interpreter)s
+import base64, json, types, zlib, sys
 PY3 = sys.version_info[0] == 3
 _chut_modules = []
 '''.lstrip()
@@ -839,7 +857,7 @@ for name, code in _chut_modules:
             code = code.encode('utf-8')
     else:
         name = bytes(name)
-    code = base64.decodestring(code)
+    code = zlib.decompress(base64.decodestring(code))
     mod = types.ModuleType(name)
     globs = dict()
     if PY3:
@@ -853,8 +871,9 @@ for name, code in _chut_modules:
         mod.wraps_module(mod)
     else:
         sys.modules[name] = mod
+from chut import env
+version = %(version)s
 
-import six
 '''.lstrip()
 
 if __name__ != '__main__':

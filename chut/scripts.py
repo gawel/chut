@@ -27,6 +27,8 @@ def chutify(arguments):
     --loop DELAY               Generate scripts over and over
     --upgrade-deps             Upgrade virtualenv dependencies
     --devel                    Install develop scripts in bin/
+    -i X, --interpreter=X      Python interpreter to use [default: python]
+    -v VER, --version=VER      Set the version for generated script
     """
     config = sh.ini('.chut')
     if sh.env.git_dir:
