@@ -93,11 +93,9 @@ def chutify(arguments):
         if os.path.isfile(location):
             scripts.extend(sh.generate(location, arguments))
         elif os.path.isdir(location):
-            filenames = []
             filenames = sh.grep('-lRE --include=*.py @.*console_script',
                                 location) | sh.grep('-v site-packages')
-            filenames = [s.strip() for s in filenames]
-            for filename in filenames:
+            for filename in sorted(filenames):
                 scripts.extend(sh.generate(filename, arguments))
         for cmd in commands:
             print('$ %s' % cmd)

@@ -684,7 +684,7 @@ def requires(*requirements, **kwargs):
     if '/.tox/' in sys.executable:
         venv = os.path.dirname(os.path.dirname(sys.executable))
     elif env.virtual_env:
-        venv = env.virtual_env
+        venv = env.chut_virtualenv = env.virtual_env
     else:
         venv = os.path.expanduser(kwargs.get('venv', '~/.chut/venv'))
     upgrade = '--upgrade-deps' in sys.argv
@@ -694,17 +694,24 @@ def requires(*requirements, **kwargs):
     bin_dir = os.path.join(venv, 'bin')
     if bin_dir not in env.path:
         env.path = [bin_dir] + env.path
-    if not os.path.isdir(venv):
+    if not test.d(venv):
         sh.wget(
-            '--no-check-certificate -O /tmp/virtualenv.py',
+            '--no-check-certificate -qO /tmp/virtualenv.py',
             'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
             ) > 1
-        python = sh[sys.executable]
-        python('-S /tmp/virtualenv.py', venv) > 1
-        sh.rm('/tmp/virtualenv*', shell=True)
-        sh.pip('install -Mq --timeout=5', *requirements) > 1
-    elif not env.chut_virtualenv and (env.chut_upgrade or upgrade):
-        sh.pip('install -M --upgrade --timeout=5', *requirements) > 1
+        sh[sys.executable]('-S /tmp/_virtualenv.py', venv) > 1
+        sh.rm('/tmp/_virtualenv*', shell=True)
+        print('Installing %s...' % ', '.join(requirements))
+        sh.pip('install -qM', *requirements) > 1
+    elif env.chut_virtualenv:
+        if (env.chut_upgrade or upgrade):
+            installed = ''
+        else:
+            installed = str(sh.pip('freeze')).lower()
+        requirements = [r for r in requirements if r.lower() not in installed]
+        if requirements:
+            print('Updating %s...' % ', '.join(requirements))
+            sh.pip('install -qM --upgrade', *requirements) > 1
     executable = os.path.join(bin_dir, 'python')
     if not env.chut_virtualenv:
         env.chut_virtualenv = venv
