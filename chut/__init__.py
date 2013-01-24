@@ -18,7 +18,7 @@ from ConfigObject import ConfigObject
 from contextlib import contextmanager
 
 __all__ = [
-    'console_script', 'sh', 'env', 'ini' 'stdin', 'test',
+    'console_script', 'sh', 'env', 'ini', 'stdin', 'test',
     'ls', 'cat', 'grep', 'find', 'cut', 'tr', 'head', 'tail', 'sed', 'awk',
     'nc', 'ping', 'nmap', 'hostname', 'host', 'scp', 'rsync', 'wget', 'curl',
     'cd', 'which', 'mktemp', 'echo', 'wc',
@@ -647,8 +647,6 @@ class ModuleWrapper(types.ModuleType):
                 return [str(c) for c in __all__]
             else:
                 raise ImportError('You cant import things that does not exist')
-        if attr == 'stdin':
-            return Stdin
         if hasattr(self.mod, attr):
             return getattr(self.mod, attr)
         else:

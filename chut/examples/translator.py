@@ -50,9 +50,9 @@ def translate(args):
         print('You must install casperjs first')
         return 1
     env.tr_pair = args['--langs'].replace(':', '|')
-    script = str(mktemp('translate-XXXX.js'))
+    script = str(mktemp('--tmpdir translate-XXXX.js'))
     atexit.register(rm(script))
-    sh.stdin(SCRIPT) > script
+    stdin(SCRIPT) > script
 
     def show_result():
         for line in [l.strip() for l in sh.casperjs(script) if l.strip()]:
