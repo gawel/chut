@@ -129,7 +129,7 @@ class Chut(unittest.TestCase):
 
     def test_generate(self):
         self.assertEqual(sh.generate('chut/scripts.py'),
-                         'dist/scripts/chutify')
+                         ['dist/scripts/chutify'])
 
     def test_chutify(self):
         self.assertEqual(chutify(['chut/scripts.py']), 0)

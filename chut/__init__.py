@@ -731,7 +731,7 @@ def generate(filename, arguments=None):
         for name in filenames:
             print(('%s = %s:%s' % (name.replace('_', '-'),
                                    mod.__name__, name)))
-        return 0
+        return []
 
     dest = os.path.expanduser(arguments.get('--destination', 'dist/scripts'))
     sh.mkdir('-p', dest)
