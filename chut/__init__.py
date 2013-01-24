@@ -746,14 +746,15 @@ def console_script(*args, **docopts):
         return _console_script(args[0])
 
 
-def generate(filename, arguments=None):
-    """generate a script from a @console_script. arguments may contain some
+def generate(filename, args=None):
+    """generate a script from a @console_script. args may contain some
     docopts like arguments"""
-    if arguments is None:
-        arguments = {}
+    if args is None:
+        args = {}
     if not os.path.isfile(filename):
         mod = __import__(filename, globals(), locals(), [''])
         filename = mod.__file__
+        dirname = os.path.dirname(filename)
         name = mod.__name__
     else:
         dirname = os.path.dirname(filename)
@@ -761,12 +762,16 @@ def generate(filename, arguments=None):
         name = inspect.getmodulename(filename)
         mod = __import__(name)
 
-    filenames = []
+    console_scripts = []
     for k, v in mod.__dict__.items():
         if getattr(v, 'console_script', False) is True:
-            filenames.append(k)
+            console_scripts.append(k)
 
-    dest = os.path.expanduser(arguments.get('--destination', 'dist/scripts'))
+    devel = args.get('--devel')
+    if devel:
+        dest = 'bin'
+    else:
+        dest = os.path.expanduser(args.get('--destination', 'dist/scripts'))
     sh.mkdir('-p', dest)
 
     def encode_module(mod):
@@ -792,13 +797,18 @@ def generate(filename, arguments=None):
             modules += '_chut_modules.append((%r, %r))\n' % (name, data)
 
     scripts = []
-    for name in filenames:
+    for name in console_scripts:
         script = os.path.join(dest, name.replace('_', '-'))
         with open(script, 'w') as fd:
             fd.write(SCRIPT_HEADER + modules + LOAD_MODULES)
-            fd.write(inspect.getsource(mod).replace('__main__',
-                                                    '__chutified__'))
-            fd.write("if __name__ == '__main__':\n    %s()\n" % name)
+            if devel:
+                fd.write('sys.path.insert(0, "%s")\n' % dirname)
+                fd.write('import %s\n' % mod.__name__)
+                fd.write('%s.%s()\n' % (mod.__name__, name))
+            else:
+                fd.write(inspect.getsource(mod).replace('__main__',
+                                                        '__chutified__'))
+                fd.write("if __name__ == '__main__':\n    %s()\n" % name)
         executable = sh.chmod('+x', script)
         if executable:
             print(executable.commands_line)

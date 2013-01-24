@@ -36,8 +36,7 @@ import os
 @sh.console_script
 def chutify(arguments):
     """
-    Usage: %prog [-d DIR] [--upgrade-deps] [--loop DELAY] [<location>]
-           %prog -h
+    Usage: %prog [options] [<location>]
 
     Generate binary scripts from all @console_script contained in <location>
     <location> can be a directory, a python file or a dotted name.
@@ -51,9 +50,13 @@ def chutify(arguments):
     destination = bin/
     location = scripts
 
+    Options:
+
     -h, --help                 Print this help
     -d DIR, --destination=DIR  Destination [default: dist/scripts]
     --loop DELAY               Generate scripts over and over
+    --upgrade-deps             Upgrade virtualenv dependencies
+    --devel                    Install develop scripts in bin/
     """
     config = sh.ini('.chut')
     if sh.env.git_dir:
