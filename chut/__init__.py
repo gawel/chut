@@ -25,6 +25,7 @@ __all__ = [
     'tar', 'gzip', 'gunzip', 'zip', 'unzip',
     'vlc', 'ffmpeg', 'convert',
     'virtualenv', 'pip',
+    'git', 'hg', 'svn',
     'ssh', 'sudo',
     'path', 'pwd',  # path is posixpath, pwd return os.getcwd()
     'escape', 'e',  # e is escape()
@@ -69,8 +70,10 @@ def escape(value):
 
 
 def ini(filename, **defaults):
+    """Load a .ini file in a ConfigObject. Dont raise if the file does not
+    exist"""
     for k, v in env.items():
-        if isinstance(v, six.string_types):
+        if k not in defaults and isinstance(v, six.string_types):
             defaults[k] = v
     return ConfigObject(filename=filename, defaults=defaults)
 

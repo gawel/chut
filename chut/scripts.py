@@ -12,6 +12,15 @@ def chutify(arguments):
     Generate binary scripts from all @console_script contained in <location>
     <location> can be a directory, a python file or a dotted name.
 
+    If <location> is .git then generate a pre-commit hook which generate script
+    from the current directory.
+
+    <location> and --destination can be set in a .chut file:
+
+    [chut]
+    destination = bin/
+    location = scripts
+
     -h, --help                 Print this help
     -d DIR, --destination=DIR  Destination [default: dist/scripts]
     -l, --list-entry-points    List console script entry points

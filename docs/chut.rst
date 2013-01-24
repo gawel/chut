@@ -82,3 +82,18 @@ Parentheses are needed with ``>>`` (due to the way the python operator work)::
 
 .. autoclass:: chut.Stdout
    :members:
+
+Ini files
+=========
+
+.. autofunction:: chut.ini
+
+Example::
+
+    >>> from chut import ini
+    >>> config = ini('/tmp/chut.ini')
+    >>> config.my = dict(key='value')
+    >>> config.write()
+    >>> config = ini('/tmp/chut.ini')
+    >>> print(config.my.key)
+    value
