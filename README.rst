@@ -49,7 +49,7 @@ Or to stdout::
     >>> sh.cat('/tmp/chut.txt') > 1  # doctest: +SKIP
     Chut!
 
-Redirect both stdout and stderr to stdout::
+Redirect stdout to stderr::
 
     >>> sh.cat('/tmp/chut.txt') > 2  # doctest: +SKIP
     Chut!
