@@ -66,7 +66,6 @@ You can use some python code ad the end of the pipe (and only at the end)::
     ...     for line in cmd:
     ...         print(line)
     Chut rocks!
-    <BLANKLINE>
 
 Access binaries outside of PATH
 ================================
