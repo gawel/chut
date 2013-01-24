@@ -647,6 +647,8 @@ class ModuleWrapper(types.ModuleType):
                 return [str(c) for c in __all__]
             else:
                 raise ImportError('You cant import things that does not exist')
+        if attr == 'stdin':
+            return Stdin
         if hasattr(self.mod, attr):
             return getattr(self.mod, attr)
         else:
@@ -672,6 +674,7 @@ def wraps_module(mod):
 
 
 def console_script(*args, **docopts):
+    """A decorator to take care of sys.argv via docopt"""
     def _console_script(func, **docopts):
         @functools.wraps(func)
         def wrapper(arguments=None):
@@ -705,6 +708,8 @@ def console_script(*args, **docopts):
 
 
 def generate(filename, arguments=None):
+    """generate a script from a @console_script. arguments may contain some
+    docopts like arguments"""
     if arguments is None:
         arguments = {}
     if not os.path.isfile(filename):
@@ -739,17 +744,21 @@ def generate(filename, arguments=None):
         return '_chut_modules.append((%r, %r))\n' % (str(mod.__name__), data)
 
     try:
+        # check if the script is already chutified
         _chut_modules = sys.modules['__main__']._chut_modules
     except AttributeError:
+        # get source from files
         modules = [
             'six', 'docopt', 'ConfigObject', sys.modules[__name__]
         ] + arguments.get('<MODULE>', [])
         modules = ''.join([encode_module(m) for m in modules])
     else:
+        # get source from _chut_modules
         modules = ''
         for name, data in _chut_modules:
             modules += '_chut_modules.append((%r, %r))\n' % (name, data)
 
+    scripts = []
     for name in filenames:
         script = os.path.join(dest, name.replace('_', '-'))
         with open(script, 'w') as fd:
@@ -760,9 +769,10 @@ def generate(filename, arguments=None):
         executable = sh.chmod('+x', script)
         if executable:
             print(executable.commands_line)
+            scripts.append(script)
         else:
             print('failed to generate %s' % script)
-    return script
+    return scripts
 
 
 SCRIPT_HEADER = '''

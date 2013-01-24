@@ -31,7 +31,7 @@ def chutify(arguments):
         hooks = sh.path.join(location, 'hooks')
         hook = sh.path.join(hooks, 'pre-commit')
         if not __file__.endswith('chutify'):
-            script = sh.generate(__file__, {'--destination': hooks})
+            script = sh.generate(__file__, {'--destination': hooks})[0]
             sh.mv(script, hook)
         else:
             # install git hook
@@ -50,14 +50,14 @@ def chutify(arguments):
     def gen():
         scripts = []
         if os.path.isfile(location):
-            scripts.append(sh.generate(location, arguments))
+            scripts.extend(sh.generate(location, arguments))
         elif os.path.isdir(location):
             filenames = []
             filenames = sh.grep('-lRE --include=*.py @.*console_script',
                                 location) | sh.grep('-v site-packages')
             filenames = [s.strip() for s in filenames]
             for filename in filenames:
-                scripts.append(sh.generate(filename, arguments))
+                scripts.extend(sh.generate(filename, arguments))
         for cmd in commands:
             print('$ %s' % cmd)
             binary, args = cmd.split(' ', 1)
