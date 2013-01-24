@@ -52,7 +52,7 @@ def translate(args):
     env.tr_pair = args['--langs'].replace(':', '|')
     script = str(mktemp('translate-XXXX.js'))
     atexit.register(rm(script))
-    stdin(SCRIPT) > script
+    sh.stdin(SCRIPT) > script
 
     def show_result():
         for line in [l.strip() for l in sh.casperjs(script) if l.strip()]:
