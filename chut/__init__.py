@@ -18,7 +18,7 @@ from ConfigObject import ConfigObject
 from contextlib import contextmanager
 
 __all__ = [
-    'console_script', 'sh', 'env', 'ini', 'stdin', 'test',
+    'console_script', 'requires', 'sh', 'env', 'ini', 'stdin', 'test',
     'ls', 'cat', 'grep', 'find', 'cut', 'tr', 'head', 'tail', 'sed', 'awk',
     'nc', 'ping', 'nmap', 'hostname', 'host', 'scp', 'rsync', 'wget', 'curl',
     'cd', 'which', 'mktemp', 'echo', 'wc',
@@ -91,6 +91,11 @@ class Environ(dict):
         if isinstance(value, (list, tuple)):
             value = os.pathsep.join(value)
         self[attr.upper()] = value
+
+    def __delattr__(self, attr):
+        attr = attr.upper()
+        if attr in self:
+            del self[attr]
 
     def __call__(self, **kwargs):
         environ = self.__class__(self.copy())
@@ -674,6 +679,36 @@ def wraps_module(mod):
 #####################
 
 
+def requires(*requirements, **kwargs):
+    if env.chutification:
+        return
+    upgrade = '--upgrade-deps' in sys.argv
+    if not env.pip_download_cache:
+        dirname = os.path.expanduser('~/.chut/cache')
+        if not test.d(dirname):
+            sh.mkdir('-p', dirname)
+        env.pip_download_cache = dirname
+    venv = os.path.expanduser(kwargs.get('venv', '~/.chut/venv'))
+    bin_dir = os.path.join(venv, 'bin')
+    if bin_dir not in env.path:
+        env.path = [bin_dir] + env.path
+    if not os.path.isdir(venv):
+        sh.wget(
+            '--no-check-certificate -O /tmp/virtualenv.py',
+            'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
+            ) > 1
+        python = sh[sys.executable]
+        python('-S /tmp/virtualenv.py', venv) > 1
+        sh.rm('/tmp/virtualenv*', shell=True)
+        sh.pip('install -Mq --timeout=5', *requirements) > 1
+    elif env.chut_upgrade or upgrade:
+        sh.pip('install -M --upgrade --timeout=5', *requirements) > 1
+    executable = os.path.join(bin_dir, 'python')
+    if not env.chut_virtualenv:
+        env.chut_virtualenv = venv
+        os.execve(executable, [executable] + sys.argv, env)
+
+
 def console_script(*args, **docopts):
     """A decorator to take care of sys.argv via docopt"""
     def _console_script(func, **docopts):
@@ -711,6 +746,7 @@ def console_script(*args, **docopts):
 def generate(filename, arguments=None):
     """generate a script from a @console_script. arguments may contain some
     docopts like arguments"""
+    env.chutification = '1'
     if arguments is None:
         arguments = {}
     if not os.path.isfile(filename):
@@ -727,12 +763,6 @@ def generate(filename, arguments=None):
     for k, v in mod.__dict__.items():
         if getattr(v, 'console_script', False) is True:
             filenames.append(k)
-
-    if arguments.get('--list-entry-points'):
-        for name in filenames:
-            print(('%s = %s:%s' % (name.replace('_', '-'),
-                                   mod.__name__, name)))
-        return []
 
     dest = os.path.expanduser(arguments.get('--destination', 'dist/scripts'))
     sh.mkdir('-p', dest)
@@ -773,6 +803,7 @@ def generate(filename, arguments=None):
             scripts.append(script)
         else:
             print('failed to generate %s' % script)
+    del env.chutification
     return scripts
 
 
