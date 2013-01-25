@@ -46,7 +46,7 @@ def chutify(arguments):
         arguments['destination'] = hooks
         generator = sh.Generator(**arguments)
         if not __file__.endswith('chutify'):
-            script = generator(__file__)
+            script = generator(__file__)[0]
             sh.mv(script, hook)
         else:
             # install git hook
