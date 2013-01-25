@@ -73,9 +73,8 @@ def escape(value):
 def ini(filename, **defaults):
     """Load a .ini file in a ConfigObject. Dont raise if the file does not
     exist"""
-    for k, v in env.items():
-        if k not in defaults and isinstance(v, six.string_types):
-            defaults[k] = v
+    filename = os.path.expanduser(filename)
+    defaults.update(home=os.path.expanduser('~'))
     return ConfigObject(filename=filename, defaults=defaults)
 
 
@@ -760,7 +759,10 @@ class console_script(object):
         if arguments.get('--version') is True:
             res = self.version()
         else:
-            res = self.func(arguments)
+            try:
+                res = self.func(arguments)
+            except KeyboardInterrupt:
+                sys.exit(1)
         return res if ret else sys.exit(res)
 
     def __call__(self, *args, **kwargs):
