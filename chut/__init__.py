@@ -820,7 +820,6 @@ class Generator(object):
         chutified = os.environ.get(self._env_key, str(''))
         if filename in chutified:
             return []
-        os.environ[self._env_key] = str(chutified + filename + ':')
         if args is None:
             args = {}
         args.update(kwargs)
@@ -829,6 +828,7 @@ class Generator(object):
         name = inspect.getmodulename(filename)
         os.environ.update(env)
         mod = __import__(name, {'os': os}, {'os': os})
+        os.environ[self._env_key] = str(chutified + filename + ':')
 
         console_scripts = []
         for k, v in mod.__dict__.items():
