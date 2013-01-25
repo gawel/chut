@@ -28,7 +28,7 @@ def chutify(arguments):
     --upgrade-deps             Upgrade virtualenv dependencies
     --devel                    Install develop scripts in bin/
     -i X, --interpreter=X      Python interpreter to use [default: python]
-    -v VER, --version=VER      Set the version for generated script
+    -v, --version              Print script version
     """
     config = sh.ini('.chut')
     if sh.env.git_dir:
@@ -43,8 +43,10 @@ def chutify(arguments):
     if location.endswith('.git'):
         hooks = sh.path.join(location, 'hooks')
         hook = sh.path.join(hooks, 'pre-commit')
+        arguments['destination'] = hooks
+        generator = sh.Generator(**arguments)
         if not __file__.endswith('chutify'):
-            script = sh.generate(__file__, {'--destination': hooks})[0]
+            script = generator(__file__)
             sh.mv(script, hook)
         else:
             # install git hook
@@ -57,18 +59,13 @@ def chutify(arguments):
     if cfg.destination and arguments['--destination'] == 'dist/scripts':
         arguments['--destination'] = cfg.destination
 
+    generator = sh.Generator(**arguments)
+
     commands = cfg.run.as_list('\n')
     commands = [c.strip() for c in commands if c.strip()]
 
     def gen():
-        scripts = []
-        if os.path.isfile(location):
-            scripts.extend(sh.generate(location, arguments))
-        elif os.path.isdir(location):
-            filenames = sh.grep('-lRE --include=*.py @.*console_script',
-                                location) | sh.grep('-v site-packages')
-            for filename in sorted(filenames):
-                scripts.extend(sh.generate(filename, arguments))
+        scripts = generator(location)
         for cmd in commands:
             print('$ %s' % cmd)
             binary, args = cmd.split(' ', 1)

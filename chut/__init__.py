@@ -715,6 +715,7 @@ def requires(*requirements, **kwargs):
     executable = os.path.join(bin_dir, 'python')
     if not env.chut_virtualenv:
         env.chut_virtualenv = venv
+        env.CHUTIFIED_FILES = os.environ.get('CHUTIFIED_FILES', '')
         os.execve(executable, [executable] + sys.argv, env)
     yield True
 
@@ -727,6 +728,10 @@ class console_script(object):
         self.docopts = opts
         self.func = self.doc = None
         self.wraps(args)
+
+    def version(self):
+        version = getattr(sys.modules['__main__'], 'version', 'unknown')
+        print('%s %s' % (self.func.__name__, version))
 
     def wraps(self, args):
         if args:
@@ -752,100 +757,125 @@ class console_script(object):
         if ret:
             self.docopts['argv'] = arguments
         arguments = docopt.docopt(self.doc, **self.docopts)
-        res = self.func(arguments)
-        if ret:
-            return res
+        if arguments.get('--version') is True:
+            res = self.version()
         else:
-            sys.exit(res)
+            res = self.func(arguments)
+        return res if ret else sys.exit(res)
 
     def __call__(self, *args, **kwargs):
-        if not self.func:
-            return self.wraps(args)
-        return self.main(*args, **kwargs)
+        return self.main(*args, **kwargs) if self.func else self.wraps(args)
 
 
-def generate(filename, args=None):
+class Generator(object):
     """generate a script from a @console_script. args may contain some
     docopts like arguments"""
-    if args is None:
-        args = {}
-    if not os.path.isfile(filename):
-        mod = __import__(filename, globals(), locals(), [''])
-        filename = mod.__file__
-        dirname = os.path.dirname(filename)
-        name = mod.__name__
-    else:
+
+    _modules = {}
+    _env_key = str('CHUTIFIED_FILES')
+
+    def __init__(self, **args):
+        self.devel = args.get('--devel') or args.get('devel')
+        if self.devel:
+            dest = 'bin'
+        else:
+            dest = args.get('--destination') or args.get('destination')
+            dest = os.path.expanduser(dest or 'dist/scripts')
+        sh.mkdir('-p', dest)
+        self.dest = dest
+        args.update(version=repr(str(args.get('--version') or 'unknown')),
+                    interpreter=args.get('--interpreter', 'python'))
+        self.args = args
+        self.mods = self.encode_modules(*args.get('modules', []))
+
+    def encode_module(self, mod):
+        if not hasattr(mod, '__file__'):
+            mod = __import__(mod)
+        name = str(mod.__name__)
+        if name not in self._modules:
+            data = inspect.getsource(mod)
+            data = base64.encodestring(zlib.compress(six.b(data)))
+            code = '_chut_modules.append((%r, %r))\n' % (name, data)
+            self._modules[name] = code
+        return self._modules[name]
+
+    def encode_modules(self, *modules):
+        try:
+            # check if the script is already chutified
+            _chut_modules = sys.modules['__main__']._chut_modules
+        except AttributeError:
+            # get source from files
+            modules = [
+                'six', 'docopt', 'ConfigObject', sys.modules[__name__]
+            ] + list(modules)
+            modules = ''.join([self.encode_module(m) for m in modules])
+        else:
+            # get source from _chut_modules
+            modules = ''
+            for name, data in _chut_modules:
+                modules += '_chut_modules.append((%r, %r))\n' % (name, data)
+        return modules
+
+    def generate(self, filename, args=None, **kwargs):
+        chutified = os.environ.get(self._env_key, str(''))
+        if filename in chutified:
+            return []
+        os.environ[self._env_key] = str(chutified + filename + ':')
+        if args is None:
+            args = {}
+        args.update(kwargs)
         dirname = os.path.dirname(filename)
         sys.path.insert(0, dirname)
         name = inspect.getmodulename(filename)
-        mod = __import__(name)
+        os.environ.update(env)
+        mod = __import__(name, {'os': os}, {'os': os})
 
-    console_scripts = []
-    for k, v in mod.__dict__.items():
-        if getattr(v, '_console_script', False) is True:
-            console_scripts.append(k)
+        console_scripts = []
+        for k, v in mod.__dict__.items():
+            if getattr(v, '_console_script', False) is True:
+                console_scripts.append(k)
 
-    devel = args.get('--devel') or args.get('devel')
-    if devel:
-        dest = 'bin'
-    else:
-        dest = args.get('--destination') or args.get('destination')
-        dest = os.path.expanduser(dest or 'dist/scripts')
-    sh.mkdir('-p', dest)
-
-    def encode_module(mod):
-        if not hasattr(mod, '__file__'):
-            mod = __import__(mod)
-        data = inspect.getsource(mod)
-        data = base64.encodestring(zlib.compress(six.b(data)))
-        values = (str(mod.__name__), data)
-        return '_chut_modules.append((%r, %r))\n' % values
-
-    try:
-        # check if the script is already chutified
-        _chut_modules = sys.modules['__main__']._chut_modules
-    except AttributeError:
-        # get source from files
-        modules = [
-            'six', 'docopt', 'ConfigObject', sys.modules[__name__]
-        ]
-        modules = ''.join([encode_module(m) for m in modules])
-    else:
-        # get source from _chut_modules
-        modules = ''
-        for name, data in _chut_modules:
-            modules += '_chut_modules.append((%r, %r))\n' % (name, data)
-
-    d = dict(version=repr(args.get('--version') or 'unknown'),
-             interpreter=args.get('--interpreter', 'python'))
-
-    scripts = []
-    for name in console_scripts:
-        script = os.path.join(dest, name.replace('_', '-'))
-        with open(script, 'w') as fd:
-
-            fd.write(SCRIPT_HEADER % d + modules + LOAD_MODULES % d)
-            if devel:
-                fd.write('sys.path.insert(0, "%s")\n' % dirname)
-                fd.write('import %s\n' % mod.__name__)
-                fd.write('if __name__ == "__main__":\n')
-                fd.write('    %s.%s()\n' % (mod.__name__, name))
+        scripts = []
+        for name in console_scripts:
+            script = os.path.join(self.dest, name.replace('_', '-'))
+            with open(script, 'w') as fd:
+                fd.write(SCRIPT_HEADER % self.args + self.mods + LOAD_MODULES)
+                if self.devel:
+                    fd.write('sys.path.insert(0, "%s")\n' % dirname)
+                    fd.write('import %s\n' % mod.__name__)
+                    fd.write('if __name__ == "__main__":\n')
+                    fd.write('    %s.%s()\n' % (mod.__name__, name))
+                else:
+                    fd.write(inspect.getsource(mod).replace('__main__',
+                                                            '__chutified__'))
+                    fd.write("\nif __name__ == '__main__':\n    %s()\n" % name)
+            executable = sh.chmod('+x', script)
+            if executable:
+                print(executable.commands_line)
+                scripts.append(script)
             else:
-                fd.write(inspect.getsource(mod).replace('__main__',
-                                                        '__chutified__'))
-                fd.write("\nif __name__ == '__main__':\n    %s()\n" % name)
-        executable = sh.chmod('+x', script)
-        if executable:
-            print(executable.commands_line)
-            scripts.append(script)
-        else:
-            print('failed to generate %s' % script)
-    return scripts
+                print('failed to generate %s' % script)
+        return scripts
+
+    def __call__(self, location):
+        scripts = []
+        if os.path.isfile(location):
+            scripts.extend(self.generate(location))
+        elif os.path.isdir(location):
+            filenames = sh.grep('-lRE --include=*.py @.*console_script',
+                                location) | sh.grep('-v site-packages')
+            for filename in sorted(filenames):
+                scripts.extend(self.generate(filename))
+        return scripts
 
 
 SCRIPT_HEADER = '''
 #!/usr/bin/env %(interpreter)s
-import base64, json, types, zlib, sys
+
+version = %(version)s
+
+import base64, json, types, zlib, sys, os
+os.environ['CHUTIFIED'] = '1'
 PY3 = sys.version_info[0] == 3
 _chut_modules = []
 '''.lstrip()
@@ -872,8 +902,6 @@ for name, code in _chut_modules:
     else:
         sys.modules[name] = mod
 from chut import env
-version = %(version)s
-
 '''.lstrip()
 
 if __name__ != '__main__':
