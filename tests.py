@@ -128,6 +128,7 @@ class Chut(unittest.TestCase):
         self.assertEqual(f([]), 1)
 
     def test_generate(self):
+        os.environ['CHUTIFIED_FILES'] = ''
         generator = sh.Generator()
         self.assertEqual(generator('chut/scripts.py'),
                          ['dist/scripts/chutify'])
