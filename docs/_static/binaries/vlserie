@@ -32,63 +32,72 @@ for name, code in _chut_modules:
         sys.modules[name] = mod
 from chut import env
 # -*- coding: utf-8 -*-
-from chut import *  # NOQA
+from chut import *  # noqa
 import sys
+import re
+
+_episode = re.compile(r'S([0-9]+)E([0-9]+)')
+
+
+def extract_numbers(f):
+    season, episode = _episode.findall(f)[0]
+    episode = int(season), int(episode)
+    return episode
 
 
 @console_script
-def rfsync(args):
+def vlserie(args):
     """
-    Usage: %prog [-p] <host>:<path> [-- <find_options>...]
-           %prog [-] [<destination>] [-- <rsync_options>...]
-           %prog -h
+    Usage: %prog [options] [<season> <episode>]
 
-    Find some files on a remote server and sync them on a local directory using
-    rsync
+    Play the serie contained in the current folder. File names should be
+    formated like SXXEXX. Also load subtitles if any.
 
-    Examples:
+    Store the latest play in ~/.vlserie. So you dont have to remember it
+    yourself.
 
-        $ rfsync gawel@example.com:~/ -- -name "*.avi" | rfsync
-        $ rfsync gawel@example.com:~/ -- -size +100M | rfsync ~/Movies -- -q
+    Require vlc.
 
+    Options:
+    -h              Show this help
+    --l,--latest    Play latest instead of next
+    --loop          Loop over episodes
     """
-    remote = args.get('<host>:<path>')
-    if remote not in (None, '-') and ':' in remote:
-        host, p = remote.split(':')
-        srv = ssh(host)
-        options = []
-        for a in args.get('<find_options>', []) or []:
-            if '*' in a:
-                a = '"%s"' % a
-            options.append(a)
-        options = ' '.join(options)
-        done = set()
-        with sh.pipes(srv.find(p, options, shell=True)) as cmd:
-            print(repr(cmd))
-            for line in cmd:
-                line = line.strip()
-                if args['-p']:
-                    line = path.dirname(line)
-                if line not in done:
-                    print(srv.join(line))
-                    done.add(line)
-    else:
-        destination = args['<host>:<path>'] or args['<destination>'] or '.'
-        destination = path.expanduser(path.expandvars(destination))
-        options = ' '.join(args.get('<rsync_options>', [])) or '-aP'
-        targets = sys.stdin.readlines()
-        targets = [p.strip('\n/') for p in targets]
-        targets = [p.strip('/ ') for p in targets if p.strip('/ ')]
-        targets = sorted(set(targets))
-        if not targets:
-            return 1
-        if '-q' not in options:
-            print('$ rsync %s \\\n\t%s \\\n\t%s' % (
-                                    options,
-                                    ' \\\n\t'.join(targets),
-                                    destination
-                                  ))
-        rsync(options, ' '.join(targets), destination, shell=True) > 1
+
+    def play(filename, episode):
+        cmdline = '-f %s' % e(filename)
+        srts = find('-regex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
+        for srt in sorted(srts):
+            cmdline += ' --sub-file %s' % e(srt)
+        cmd = vlc(cmdline, combine_stderr=True, shell=True)
+        print(repr(cmd))
+        serie.latest = filename
+        sys.exit(0)
+        config.write()
+        cmd > 1
+        if not args['--loop']:
+            sys.exit(0)
+
+    config = ini('~/.vlserie')
+    config.write()
+    serie = config[path.abspath('.')]
+
+    filenames = find('. -regex ".*S[0-9]+E[0-9]+.*\(avi\|wmv\)"', shell=True)
+    filenames = [path.basename(f) for f in filenames]
+    filenames = sorted([(extract_numbers(f), f) for f in filenames])
+
+    if args['<season>']:
+        episode = int(args['<season>']), int(args['<episode>'])
+        filenames = [(x, f) for x, f in filenames if x >= episode]
+    elif serie.latest:
+        episode = extract_numbers(serie.latest)
+        if args['--latest']:
+            filenames = [(x, f) for x, f in filenames if x >= episode]
+        else:
+            filenames = [(x, f) for x, f in filenames if x > episode]
+
+    for episode, filename in filenames:
+        play(filename, episode)
 
 if __name__ == '__main__':
-    rfsync()
+    vlserie()
