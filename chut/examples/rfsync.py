@@ -8,14 +8,15 @@ def rfsync(args):
     """
     Usage: %prog [-p] <host>:<path> [-- <find_options>...]
            %prog [-] [<destination>] [-- <rsync_options>...]
+           %prog -h
 
     Find some files on a remote server and sync them on a local directory using
     rsync
 
     Examples:
 
-        $ rfsync gawel@example.com:~/ -name "*.avi" | rfsync
-        $ rfsync gawel@example.com:~/ -size +100M | rfsync ~/Movies -- -q
+        $ rfsync gawel@example.com:~/ -- -name "*.avi" | rfsync
+        $ rfsync gawel@example.com:~/ -- -size +100M | rfsync ~/Movies -- -q
 
     """
     remote = args.get('<host>:<path>')
@@ -24,6 +25,8 @@ def rfsync(args):
         srv = ssh(host)
         options = []
         for a in args.get('<find_options>', []) or []:
+            if '*' in a:
+                a = '"%s"' % a
             options.append(a)
         options = ' '.join(options)
         done = set()
