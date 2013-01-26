@@ -231,9 +231,8 @@ class Pipe(object):
             cmds.append(s.strip())
         return str(' | '.join(cmds))
 
-    @property
-    def stdout(self):
-        """standard output of the pipe. A file descriptor or an iteraror"""
+    def bg(self):
+        """Run processes in background. Return the last piped Popen object"""
         p = None
         self.processes = []
         self._stderr = None
@@ -249,6 +248,7 @@ class Pipe(object):
             elif isinstance(cmd, PyPipe):
                 cmd.stdin = p.stdout
                 stdin = cmd.iter_stdout
+                p = cmd
             else:
                 args = cmd.command_line(cmd.kwargs.get('shell', False))
 
@@ -270,7 +270,16 @@ class Pipe(object):
 
                 self.processes.append(p)
                 stdin = p.stdout
-        return stdin
+        return p
+
+    @property
+    def stdout(self):
+        """standard output of the pipe. A file descriptor or an iteraror"""
+        p = self.bg()
+        if isinstance(p, PyPipe):
+            return p.iter_stdout
+        else:
+            return p.stdout
 
     @classmethod
     def map(cls, args,
