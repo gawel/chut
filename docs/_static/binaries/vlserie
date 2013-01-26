@@ -72,7 +72,6 @@ def vlserie(args):
         cmd = vlc(cmdline, combine_stderr=True, shell=True)
         print(repr(cmd))
         serie.latest = filename
-        sys.exit(0)
         config.write()
         cmd > 1
         if not args['--loop']:

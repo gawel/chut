@@ -40,7 +40,10 @@ def vlserie(args):
         print(repr(cmd))
         serie.latest = filename
         config.write()
-        cmd > 1
+        try:
+            cmd > 1
+        except OSError:
+            pass
         if not args['--loop']:
             sys.exit(0)
 
