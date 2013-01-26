@@ -681,19 +681,22 @@ def wraps_module(mod):
 
 @contextmanager
 def requires(*requirements, **kwargs):
+    """Add extra dependencies in a virtualenv"""
     if '/.tox/' in sys.executable:
         venv = os.path.dirname(os.path.dirname(sys.executable))
     elif env.virtual_env:
         venv = env.chut_virtualenv = env.virtual_env
     else:
         venv = os.path.expanduser(kwargs.get('venv', '~/.chut/venv'))
-    upgrade = '--upgrade-deps' in sys.argv
     if not env.pip_download_cache:
         env.pip_download_cache = os.path.expanduser('~/.chut/cache')
         sh.mkdir('-p', env.pip_download_cache)
     bin_dir = os.path.join(venv, 'bin')
     if bin_dir not in env.path:
         env.path = [bin_dir] + env.path
+    requirements = list(requirements)
+    if 'chut' not in requirements:
+        requirements.insert(0, 'chut')
     if not test.d(venv):
         import urllib
         url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
@@ -703,6 +706,7 @@ def requires(*requirements, **kwargs):
         print('Installing %s...' % ', '.join(requirements))
         sh.pip('install -qM', *requirements) > 1
     elif env.chut_virtualenv:
+        upgrade = '--upgrade-deps' in sys.argv
         if (env.chut_upgrade or upgrade):
             installed = ''
         else:
