@@ -59,9 +59,9 @@ def vlserie(args):
     Require vlc.
 
     Options:
-    -h              Show this help
-    --l,--latest    Play latest instead of next
+    -l,--latest     Play latest instead of next
     --loop          Loop over episodes
+    -h              Show this help
     """
 
     def play(filename, episode):

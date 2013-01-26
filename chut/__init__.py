@@ -852,7 +852,6 @@ class Generator(object):
                     fd.write('if __name__ == "__main__":\n')
                     fd.write('    %s.%s()\n' % (mod.__name__, name))
                 else:
-                    print(self.devel, script, self.dest)
                     fd.write(inspect.getsource(mod).replace('__main__',
                                                             '__chutified__'))
                     fd.write("\nif __name__ == '__main__':\n    %s()\n" % name)
