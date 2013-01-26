@@ -700,7 +700,7 @@ def requires(*requirements, **kwargs):
     if not test.d(venv):
         import urllib
         url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
-        urllib.urlretrieve(url, '/tmp/virtualenv.py')
+        urllib.urlretrieve(url, '/tmp/_virtualenv.py')
         sh[sys.executable]('-S /tmp/_virtualenv.py', venv) > 1
         sh.rm('/tmp/_virtualenv*', shell=True)
         print('Installing %s...' % ', '.join(requirements))
