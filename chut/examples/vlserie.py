@@ -51,7 +51,8 @@ def vlserie(args):
     config.write()
     serie = config[path.abspath('.')]
 
-    filenames = find('. -regex ".*S[0-9]+E[0-9]+.*\(avi\|wmv\)"', shell=True)
+    filenames = find('. -regex ".*S[0-9]+E[0-9]+.*\(avi\|wmv\|mp4\)"',
+                     shell=True)
     filenames = [path.basename(f) for f in filenames]
     filenames = sorted([(extract_numbers(f), f) for f in filenames])
 
