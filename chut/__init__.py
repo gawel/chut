@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 import os
 import sys
 import six
+import stat
 import zlib
 import time
 import types
@@ -727,7 +728,6 @@ def requires(*requirements, **kwargs):
     executable = os.path.join(bin_dir, 'python')
     if not env.chut_virtualenv:
         env.chut_virtualenv = venv
-        env.CHUTIFIED_FILES = os.environ.get('CHUTIFIED_FILES', '')
         os.execve(executable, [executable] + sys.argv, env)
     yield True
 
@@ -787,7 +787,6 @@ class Generator(object):
     docopts like arguments"""
 
     _modules = {}
-    _env_key = str('CHUTIFIED_FILES')
 
     def __init__(self, **args):
         self.devel = args.get('--devel') or args.get('devel')
@@ -832,9 +831,6 @@ class Generator(object):
         return modules
 
     def generate(self, filename, args=None, **kwargs):
-        chutified = os.environ.get(self._env_key, str(''))
-        if filename in chutified:
-            return []
         if args is None:
             args = {}
         args.update(kwargs)
@@ -843,7 +839,6 @@ class Generator(object):
         name = inspect.getmodulename(filename)
         os.environ.update(env)
         mod = __import__(name, {'os': os}, {'os': os})
-        os.environ[self._env_key] = str(chutified + filename + ':')
 
         console_scripts = []
         for k, v in mod.__dict__.items():
@@ -851,8 +846,13 @@ class Generator(object):
                 console_scripts.append(k)
 
         scripts = []
+        mtime = os.stat(filename)[stat.ST_MTIME]
         for name in console_scripts:
             script = os.path.join(self.dest, name.replace('_', '-'))
+            if os.path.isfile(script) and '--loop' in sys.argv:
+                smtime = os.stat(script)[stat.ST_MTIME]
+                if mtime < smtime:
+                    continue
             with open(script, 'w') as fd:
                 fd.write(SCRIPT_HEADER % self.args + self.mods + LOAD_MODULES)
                 if self.devel:
