@@ -57,7 +57,7 @@ def chutify(arguments):
 
     -h, --help                 Print this help
     -d DIR, --destination=DIR  Destination [default: dist/scripts]
-    --loop DELAY               Generate scripts over and over
+    --loop                     Generate scripts over and over
     --upgrade-deps             Upgrade virtualenv dependencies
     --devel                    Install develop scripts in bin/
     -i X, --interpreter=X      Python interpreter to use [default: python]
@@ -110,8 +110,7 @@ def chutify(arguments):
         while True:
             try:
                 gen()
-                time.sleep(float(arguments['--loop']))
-                print('--')
+                time.sleep(.1)
             except KeyboardInterrupt:
                 return 0
     else:
@@ -119,6 +118,9 @@ def chutify(arguments):
         if sh.env.git_dir:
             sh.git('add -f', *scripts) > 1
     return 0
+
+if __name__ == '__chutified__':
+    chutify()
 
 if __name__ == '__main__':
     chutify()
