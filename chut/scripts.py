@@ -68,8 +68,11 @@ def chutify(arguments):
         scripts = generator(location)
         for cmd in commands:
             print('$ %s' % cmd)
-            binary, args = cmd.split(' ', 1)
-            sh[binary](args) > 2
+            if ' ' in cmd:
+                binary, args = cmd.split(' ', 1)
+                sh[binary](args) > 2
+            else:
+                sh[cmd]()
         return scripts
 
     if arguments['--loop']:
