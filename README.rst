@@ -22,6 +22,39 @@ Using pip::
 
 This will also install docopt and allow you to use the ``@console_script`` decorator.
 
+Another option is to get ``chutify`` standalone version::
+
+    $ wget https://raw.github.com/gawel/chut/master/docs/_static/binaries/chutify
+    $ chmod +x chutify
+
+Quick quick start
+=================
+
+Get the ``chutify`` script::
+
+    $ wget https://raw.github.com/gawel/chut/master/docs/_static/binaries/chutify
+    $ chmod +x chutify
+
+Write a console script::
+
+    $ cat << EOF myscript.py
+    from chut import *
+    @console_script
+    def mycmd(args):
+        """Usage: %prog [-h] <directory>"""
+        for filename in find('-name *.py') | grep('@console_script):
+            print(filename)
+
+Run ``chutify``::
+
+    $ chutify --loop
+    chmod +x dist/scripts/mycmd
+
+And use/debug the newly created standalone script::
+
+    $ ./dist/scripts/mycmd
+
+
 Quick start
 ===========
 
