@@ -47,6 +47,20 @@ And check the result in ``dist/scripts``::
     <BLANKLINE>
     -h, --help    Print this help
 
+Using virtualenv and pip
+=========================
+
+If you need some dependencies then the ``require`` function is made for you.
+
+Just add something like this in your code::
+
+    >>> from chut import requires
+    >>> requires('webob', venv="~/.chut/myapp")
+    >>> import webob
+
+This will install a virtualenv in ``~/.chut/myapp`` and your script will use it!
+
+
 ..
     >>> if test.x('/usr/bin/python2.7'):
     ...   out = str(ch.pipe('python2.7', 'dist/scripts/my-script'))
