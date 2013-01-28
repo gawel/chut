@@ -837,17 +837,19 @@ class Generator(object):
         os.environ.update(env)
 
         console_scripts = list(sh.grep('-A4 -E @.*console_script', filename))
+        console_scripts = [s for s in console_scripts if s.startswith('def ')]
 
         scripts = []
+        loop = '--loop' in sys.argv or '-l' in sys.argv
+        while not os.path.isfile(filename):
+            time.sleep(.1)
         mtime = os.stat(filename)[stat.ST_MTIME]
-        for func_name in console_scripts:
-            if not func_name.startswith('def '):
-                continue
+        for func_name in sorted(set(console_scripts)):
             name = func_name[4:].split('(')[0]
             script = os.path.join(self.dest, name.replace('_', '-'))
-            if os.path.isfile(script) and '--loop' in sys.argv:
+            if os.path.isfile(script) and loop:
                 smtime = os.stat(script)[stat.ST_MTIME]
-                if mtime < smtime:
+                if mtime <= smtime:
                     continue
             with open(script, 'w') as fd:
                 fd.write(SCRIPT_HEADER % self.args + self.mods + LOAD_MODULES)
