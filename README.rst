@@ -13,24 +13,11 @@ It's `tested <https://travis-ci.org/gawel/chut>`_ with py2.6+ and py3.2+:
 Full documentation can be found
 `here <https://chut.readthedocs.org/en/latest/>`_
 
-Installation
-============
-
-Using pip::
-
-    $ pip install chut
-
-This will also install docopt and allow you to use the ``@console_script`` decorator.
-
-Another option is to get ``chutify`` standalone version::
-
-    $ wget https://raw.github.com/gawel/chut/master/docs/_static/binaries/chutify
-    $ chmod +x chutify
-
 Quick quick start
 =================
 
-Get the ``chutify`` script::
+Get the `chutify
+<https://raw.github.com/gawel/chut/master/docs/_static/binaries/chutify>`_ script::
 
     $ wget https://raw.github.com/gawel/chut/master/docs/_static/binaries/chutify
     $ chmod +x chutify
@@ -47,13 +34,30 @@ Write a console script::
 
 Run ``chutify``::
 
-    $ chutify --loop
+    $ ./chutify --loop
     chmod +x dist/scripts/mycmd
 
 And use/debug the newly created standalone script::
 
     $ ./dist/scripts/mycmd
 
+Also have a look at the `examples <https://chut.readthedocs.org/en/latest/examples.html>`_.
+
+Installation
+============
+
+Using pip::
+
+    $ pip install chut
+
+This will also install docopt and allow you to use the ``@console_script`` decorator.
+
+Another option is to get `chutify
+<https://raw.github.com/gawel/chut/master/docs/_static/binaries/chutify>`_
+standalone version::
+
+    $ wget https://raw.github.com/gawel/chut/master/docs/_static/binaries/chutify
+    $ chmod +x chutify
 
 Quick start
 ===========
