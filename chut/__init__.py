@@ -835,19 +835,17 @@ class Generator(object):
             args = {}
         args.update(kwargs)
         dirname = os.path.dirname(filename)
-        sys.path.insert(0, dirname)
-        name = inspect.getmodulename(filename)
+        mod_name = inspect.getmodulename(filename)
         os.environ.update(env)
-        mod = __import__(name, {'os': os}, {'os': os})
 
-        console_scripts = []
-        for k, v in mod.__dict__.items():
-            if getattr(v, '_console_script', False) is True:
-                console_scripts.append(k)
+        console_scripts = list(sh.grep('-A4 -E @.*console_script', filename))
 
         scripts = []
         mtime = os.stat(filename)[stat.ST_MTIME]
-        for name in console_scripts:
+        for func_name in console_scripts:
+            if not func_name.startswith('def '):
+                continue
+            name = func_name[4:].split('(')[0]
             script = os.path.join(self.dest, name.replace('_', '-'))
             if os.path.isfile(script) and '--loop' in sys.argv:
                 smtime = os.stat(script)[stat.ST_MTIME]
@@ -857,12 +855,13 @@ class Generator(object):
                 fd.write(SCRIPT_HEADER % self.args + self.mods + LOAD_MODULES)
                 if self.devel:
                     fd.write('sys.path.insert(0, "%s")\n' % dirname)
-                    fd.write('import %s\n' % mod.__name__)
+                    fd.write('import %s\n' % mod_name)
                     fd.write('if __name__ == "__main__":\n')
-                    fd.write('    %s.%s()\n' % (mod.__name__, name))
+                    fd.write('    %s.%s()\n' % (mod_name, name))
                 else:
-                    fd.write(inspect.getsource(mod).replace('__main__',
-                                                            '__chutified__'))
+                    with open(filename) as mod:
+                        fd.write(mod.read().replace('__main__',
+                                                    '__chutified__'))
                     fd.write("\nif __name__ == '__main__':\n    %s()\n" % name)
             executable = sh.chmod('+x', script)
             if executable:
