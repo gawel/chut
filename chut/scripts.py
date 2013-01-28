@@ -4,7 +4,7 @@ import os
 
 
 @sh.console_script
-def chutify(arguments):
+def chutify(args):
     """
     Usage: %prog [options] [<location>]
 
@@ -25,6 +25,7 @@ def chutify(arguments):
     -h, --help                 Print this help
     -v, --version              Print script version
     -l, --loop                 Generate scripts when the source change
+    -s NAME, --section NAME    Use NAME section in .chut [default: chut]
     --devel                    Install develop scripts in bin/
     --upgrade                  Upgrade virtualenv dependencies
     -d DIR, --destination=DIR  Destination [default: dist/scripts]
@@ -35,18 +36,19 @@ def chutify(arguments):
         ini = sh.path.join(sh.env.git_dir, 'hooks', 'chut.ini')
         if os.path.isfile(ini):
             config.read(ini)
-    cfg = config.chut
+    cfg = config[args['--section']]
 
-    location = arguments.get('<location>') or cfg.location or os.getcwd()
+    location = args.get('<location>') or cfg.location or os.getcwd()
     location = os.path.expanduser(location)
 
     if location.endswith('.git'):
         hooks = sh.path.join(location, 'hooks')
         hook = sh.path.join(hooks, 'pre-commit')
-        arguments['destination'] = hooks
-        generator = sh.Generator(**arguments)
+        args['destination'] = hooks
+        generator = sh.Generator(**args)
         if not __file__.endswith('chutify'):
-            script = generator(__file__)[0]
+            filename = __file__.replace('.pyc', '.py')
+            script = generator(filename)[0]
             sh.mv(script, hook)
         else:
             # install git hook
@@ -56,10 +58,10 @@ def chutify(arguments):
             print(executable.commands_line)
         return
 
-    if cfg.destination and arguments['--destination'] == 'dist/scripts':
-        arguments['--destination'] = cfg.destination
+    if cfg.destination and args['--destination'] == 'dist/scripts':
+        args['--destination'] = cfg.destination
 
-    generator = sh.Generator(**arguments)
+    generator = sh.Generator(**args)
 
     commands = cfg.run.as_list('\n')
     commands = [c.strip() for c in commands if c.strip()]
@@ -75,7 +77,7 @@ def chutify(arguments):
                 sh[cmd]()
         return scripts
 
-    if arguments['--loop']:
+    if args['--loop']:
         import time
         while True:
             try:
