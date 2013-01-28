@@ -24,13 +24,14 @@ Get the `chutify
 
 Write a console script::
 
-    $ cat << EOF myscript.py
+    $ cat << EOF > myscript.py
     from chut import *
     @console_script
     def mycmd(args):
         """Usage: %prog [-h] <directory>"""
-        for filename in find('-name *.py') | grep('@console_script):
+        for filename in find('-name *.py') | grep('@console_script'):
             print(filename)
+    EOF
 
 Run ``chutify``::
 
