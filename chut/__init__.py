@@ -689,7 +689,6 @@ def wraps_module(mod):
 #####################
 
 
-@contextmanager
 def requires(*requirements, **kwargs):
     """Add extra dependencies in a virtualenv"""
     if '/.tox/' in sys.executable:
@@ -729,7 +728,6 @@ def requires(*requirements, **kwargs):
     if not env.chut_virtualenv:
         env.chut_virtualenv = venv
         os.execve(executable, [executable] + sys.argv, env)
-    yield True
 
 
 class console_script(object):

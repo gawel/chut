@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from chut import * # noqa
-with requires('webob', 'waitress'):
-    from waitress import serve
-    import webob
+requires('webob', 'waitress')
+import webob
 
 
 def application(environ, start_response):
