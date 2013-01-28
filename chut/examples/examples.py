@@ -9,7 +9,7 @@ TEMPLATE = '''
 .. literalinclude:: ../chut/examples/%(filename)s
    :language: python
 
-Get `%(binary)s standalone <_static/binaries/%(binary)s>`_
+Get standalone `%(binary)s <_static/binaries/%(binary)s>`_
 
 '''
 
