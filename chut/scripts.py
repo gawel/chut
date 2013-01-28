@@ -33,10 +33,9 @@ def chutify(args):
     """
     config = sh.ini('.chut')
     if sh.env.git_dir:
-        ini = sh.path.join(sh.env.git_dir, 'hooks', 'chut.ini')
-        if os.path.isfile(ini):
-            config.read(ini)
-    cfg = config[args['--section']]
+        cfg = config['githook'] or config[args['--section']]
+    else:
+        cfg = config[args['--section']]
 
     location = args.get('<location>') or cfg.location or os.getcwd()
     location = os.path.expanduser(location)

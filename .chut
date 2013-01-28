@@ -1,2 +1,7 @@
 [home]
 destination = %(HOME)s/bin
+
+[githook]
+destination = docs/_static/binaries
+run =
+    docs/_static/binaries/examples
