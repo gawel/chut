@@ -16,19 +16,19 @@ def chutify(arguments):
 
     <location> and --destination can be set in a .chut file:
 
-    [chut]
-    destination = bin/
-    location = scripts
+        [chut]
+        destination = bin/
+        location = scripts
 
     Options:
 
     -h, --help                 Print this help
-    -d DIR, --destination=DIR  Destination [default: dist/scripts]
-    --loop                     Generate scripts over and over
-    --upgrade-deps             Upgrade virtualenv dependencies
-    --devel                    Install develop scripts in bin/
-    -i X, --interpreter=X      Python interpreter to use [default: python]
     -v, --version              Print script version
+    -l, --loop                 Generate scripts when the source change
+    --devel                    Install develop scripts in bin/
+    --upgrade                  Upgrade virtualenv dependencies
+    -d DIR, --destination=DIR  Destination [default: dist/scripts]
+    -i X, --interpreter=X      Python interpreter to use [default: python]
     """
     config = sh.ini('.chut')
     if sh.env.git_dir:
