@@ -55,10 +55,11 @@ def translate(args):
     stdin(SCRIPT) > script
 
     def show_result():
-        for line in [l.strip() for l in sh.casperjs(script) if l.strip()]:
-            if ':' in line:
-                line = '- ' + line
-            print(line)
+        for line in sh.casperjs(script):
+            if line:
+                if ':' in line:
+                    line = '- ' + line
+                print(line)
 
     if args['--interactive'] or not (args['-'] or args['<text>']):
         import readline
