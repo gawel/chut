@@ -64,13 +64,18 @@ def chutify(args):
     --devel                    Install develop scripts in bin/
     --upgrade                  Upgrade virtualenv dependencies
     -d DIR, --destination=DIR  Destination [default: dist/scripts]
-    -i X, --interpreter=X      Python interpreter to use [default: python]
+    -i X, --interpreter=X      Python interpreter to use
     """
     config = sh.ini('.chut')
     if sh.env.git_dir:
         cfg = config['githook'] or config[args['--section']]
     else:
         cfg = config[args['--section']]
+
+    interpreter = args['--interpreter'] or cfg.interpreter or 'python'
+    if interpreter in ('2', '3'):
+        interpreter = 'python' + interpreter
+    args['--interpreter'] = interpreter
 
     location = args.get('<location>') or cfg.location or os.getcwd()
     location = os.path.expanduser(location)
@@ -108,7 +113,7 @@ def chutify(args):
                 binary, args = cmd.split(' ', 1)
                 sh[binary](args) > 2
             else:
-                sh[cmd]()
+                sh[cmd]() > 2
         return scripts
 
     if args['--loop']:

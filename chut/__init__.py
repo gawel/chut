@@ -345,8 +345,9 @@ class Pipe(object):
         return self._order(cmds)[-1]
 
     def __iter__(self):
+        eol = six.PY3 and '\n' or b'\n'
         for line in self.stdout:
-            yield self._decode(line).rstrip('\n')
+            yield self._decode(line).rstrip(eol)
 
     def __call__(self, **kwargs):
         if self._done and self._stdout is not None:
