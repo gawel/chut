@@ -1,7 +1,11 @@
 [home]
 destination = %(HOME)s/bin
+interpreter = python3
+run =
+    rm /home/gawel/bin/chutify
 
 [githook]
 destination = docs/_static/binaries
 run =
     docs/_static/binaries/examples
+
