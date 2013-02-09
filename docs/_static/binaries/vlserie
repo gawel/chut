@@ -67,7 +67,7 @@ def vlserie(args):
     """
 
     def play(filename, episode):
-        cmdline = '-f %s' % e(filename)
+        cmdline = '-f --qt-minimal-view %s' % e(filename)
         srts = find('-regex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
         for srt in sorted(srts):
             cmdline += ' --sub-file %s' % e(srt)
@@ -86,7 +86,7 @@ def vlserie(args):
     config.write()
     serie = config[path.abspath('.')]
 
-    filenames = find('. -regex ".*S[0-9]+E[0-9]+.*\(avi\|wmv\|mp4\)"',
+    filenames = find('. -regex ".*S[0-9]+E[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
                      shell=True)
     filenames = [path.basename(f) for f in filenames]
     filenames = sorted([(extract_numbers(f), f) for f in filenames])
