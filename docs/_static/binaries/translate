@@ -105,11 +105,15 @@ def translate(args):
         from six.moves import input
         while True:
             try:
-                env.tr_text = input('Text: ')
+                env.tr_text = input('Text (%s): ' % env.tr_pair)
             except KeyboardInterrupt:
                 return
             else:
-                show_result()
+                if env.tr_text.startswith('lang'):
+                    tr_pair = env.tr_text.split(' ', 1)[1]
+                    env.tr_pair = tr_pair.replace(':', '|').strip()
+                else:
+                    show_result()
     elif args['-']:
         env.tr_text = sys.stdin.read()
     elif args['<text>']:
