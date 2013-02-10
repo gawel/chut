@@ -70,12 +70,17 @@ def translate(args):
         from six.moves import input
         while True:
             try:
-                env.tr_text = input('Text (%s): ' % env.tr_pair)
+                env.tr_text = input('%s: ' % env.tr_pair)
             except KeyboardInterrupt:
                 return
             else:
-                if env.tr_text.startswith('lang'):
-                    tr_pair = env.tr_text.split(' ', 1)[1]
+                tr_text = env.tr_text.strip()
+                if tr_text == 'q':
+                    return
+                elif tr_text == 's':
+                    env.tr_pair = '|'.join(reversed(env.tr_pair.split('|')))
+                elif tr_text.startswith('lang'):
+                    tr_pair = tr_text.split(' ', 1)[1]
                     env.tr_pair = tr_pair.replace(':', '|').strip()
                 else:
                     show_result()
