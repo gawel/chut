@@ -3,11 +3,11 @@ from chut import *  # noqa
 import sys
 import re
 
-_episode = re.compile(r'S([0-9]+)E([0-9]+)')
+_episode = re.compile(r's([0-9]+)\s*e\s*([0-9]+)')
 
 
 def extract_numbers(f):
-    season, episode = _episode.findall(f)[0]
+    season, episode = _episode.findall(f.lower())[0]
     episode = int(season), int(episode)
     return episode
 
@@ -32,10 +32,10 @@ def vlserie(args):
     """
 
     def play(filename, episode):
-        cmdline = '-f --qt-minimal-view %s' % e(filename)
+        cmdline = '-f --qt-minimal-view %r' % filename
         srts = find('-regex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
         for srt in sorted(srts):
-            cmdline += ' --sub-file %s' % e(srt)
+            cmdline += ' --sub-file %r' % srt
         cmd = vlc(cmdline, combine_stderr=True, shell=True)
         print(repr(cmd))
         serie.latest = filename
@@ -51,7 +51,7 @@ def vlserie(args):
     config.write()
     serie = config[path.abspath('.')]
 
-    filenames = find('. -regex ".*S[0-9]+E[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
+    filenames = find('. -iregex ".*s[0-9]+\s*e\s*[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
                      shell=True)
     filenames = [path.basename(f) for f in filenames]
     filenames = sorted([(extract_numbers(f), f) for f in filenames])
