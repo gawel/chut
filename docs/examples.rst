@@ -9,7 +9,16 @@ example
 .. literalinclude:: ../chut/examples/examples.py
    :language: python
 
-Get `example standalone <_static/binaries/example>`_
+Get standalone `example <_static/binaries/example>`_
+
+
+github-clone
+=========================================================
+
+.. literalinclude:: ../chut/examples/github_clone.py
+   :language: python
+
+Get standalone `github-clone <_static/binaries/github-clone>`_
 
 
 rfsync
@@ -18,7 +27,7 @@ rfsync
 .. literalinclude:: ../chut/examples/rfsync.py
    :language: python
 
-Get `rfsync standalone <_static/binaries/rfsync>`_
+Get standalone `rfsync <_static/binaries/rfsync>`_
 
 
 ssh-copy-id
@@ -27,7 +36,7 @@ ssh-copy-id
 .. literalinclude:: ../chut/examples/ssh_copy_id.py
    :language: python
 
-Get `ssh-copy-id standalone <_static/binaries/ssh-copy-id>`_
+Get standalone `ssh-copy-id <_static/binaries/ssh-copy-id>`_
 
 
 safe-upgrade
@@ -36,7 +45,7 @@ safe-upgrade
 .. literalinclude:: ../chut/examples/sudo.py
    :language: python
 
-Get `safe-upgrade standalone <_static/binaries/safe-upgrade>`_
+Get standalone `safe-upgrade <_static/binaries/safe-upgrade>`_
 
 
 translate
@@ -45,7 +54,7 @@ translate
 .. literalinclude:: ../chut/examples/translator.py
    :language: python
 
-Get `translate standalone <_static/binaries/translate>`_
+Get standalone `translate <_static/binaries/translate>`_
 
 
 vlserie
@@ -54,7 +63,7 @@ vlserie
 .. literalinclude:: ../chut/examples/vlserie.py
    :language: python
 
-Get `vlserie standalone <_static/binaries/vlserie>`_
+Get standalone `vlserie <_static/binaries/vlserie>`_
 
 
 webapp
@@ -63,5 +72,5 @@ webapp
 .. literalinclude:: ../chut/examples/webapp.py
    :language: python
 
-Get `webapp standalone <_static/binaries/webapp>`_
+Get standalone `webapp <_static/binaries/webapp>`_
 
