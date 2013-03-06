@@ -23,7 +23,7 @@ def vlserie(args):
     Store the latest play in ~/.vlserie. So you dont have to remember it
     yourself.
 
-    Require vlc.
+    Require vlc or mplayer.
 
     Options:
     -l,--latest     Play latest instead of next
@@ -31,12 +31,27 @@ def vlserie(args):
     -h              Show this help
     """
 
+    config = ini('~/.vlserie')
+    config.write()
+
+    player = config.player.binary or 'vlc'
+    print(player)
+
     def play(filename, episode):
-        cmdline = '-f --qt-minimal-view %r' % filename
+        if player == 'vlc':
+            cmdline = '-f --qt-minimal-view %r' % filename
+        elif player == 'mplayer':
+            cmdline = '-fs %r' % filename
+        else:
+            print('Unknown player %r' % player)
+            sys.exit(1)
         srts = find('-regex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
         for srt in sorted(srts):
-            cmdline += ' --sub-file %r' % srt
-        cmd = vlc(cmdline, combine_stderr=True, shell=True)
+            if player == 'vlc':
+                cmdline += ' --sub-file %r' % srt
+            elif player == 'mplayer':
+                cmdline += ' -sub %r' % srt
+        cmd = sh[player](cmdline, combine_stderr=True, shell=True)
         print(repr(cmd))
         serie.latest = filename
         config.write()
@@ -47,8 +62,6 @@ def vlserie(args):
         if not args['--loop']:
             sys.exit(0)
 
-    config = ini('~/.vlserie')
-    config.write()
     serie = config[path.abspath('.')]
 
     filenames = find('. -iregex ".*s[0-9]+\s*e\s*[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',

@@ -7,5 +7,5 @@ run =
 [githook]
 destination = docs/_static/binaries
 run =
-    docs/_static/binaries/examples
+    docs/_static/binaries/example
 
