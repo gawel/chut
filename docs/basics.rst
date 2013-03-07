@@ -103,6 +103,27 @@ You can use the test command::
     >>> if test.x('chut/recipe.py'):
     ...     print('chut/recipe.py is executable')
 
+
+Logging
+=======
+
+Chut provide logging facility::
+
+    >>> import sys
+    >>> log = sh.logopts(fmt='brief', stream=sys.stdout)
+    >>> log.info('info message')
+
+
+When logging is configured you can use those simple functions::
+
+    >>> from chut import debug, info, error
+    >>> info('info message')
+    >>> debug('debug message')
+    >>> error('info message')
+
+Notice that if you use ``%options`` in a ``console_script`` docstring then you
+don't need to use ``logopts``. The decorator will do the job for you.
+
 Run a large amount of processes
 ===============================
 
