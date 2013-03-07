@@ -20,6 +20,7 @@ from ConfigObject import ConfigObject
 from contextlib import contextmanager
 
 __all__ = [
+    'logopts', 'info', 'debug', 'error', 'exc',  # logging
     'console_script', 'requires', 'sh', 'env', 'ini', 'stdin', 'test',
     'ls', 'cat', 'grep', 'find', 'cut', 'tr', 'head', 'tail', 'sed', 'awk',
     'nc', 'ping', 'nmap', 'hostname', 'host', 'scp', 'rsync', 'wget', 'curl',
@@ -43,7 +44,52 @@ aliases = dict(
     ifconfig='/sbin/ifconfig',
     sudo='/usr/bin/sudo',
     ssh='ssh',
-  )
+)
+
+
+class Log(object):
+
+    initialized = False
+    loggers = {}
+
+    def __call__(self, args={'--quiet': False, '--verbose': False},
+                 fmt=None, name=None, stream=sys.stderr):
+
+        if not name:
+            name = posixpath.basename(sys.argv[0])
+
+        if name in self.loggers:
+            return self.loggers[name]
+
+        log = logging.getLogger(name)
+
+        if not log.handlers:
+            if fmt == 'brief':
+                fmt = '[%(levelname)-4s] %(message)s'
+            elif fmt == 'msg':
+                fmt = '%(message)s'
+            else:
+                fmt = '%(asctime)s %(levelname)-6s %(name)s %(message)s'
+            logging.basicConfig(stream=stream, format=fmt)
+
+        if not log.level:
+            if args.get('--quiet'):
+                level = logging.ERROR
+            elif args.get('--debug'):
+                level = logging.DEBUG
+            else:
+                level = logging.INFO
+
+            log.setLevel(level)
+        self.loggers[name] = log
+        return log
+
+    def log(self, name):
+        def wrapper(*args, **kwargs):
+            log = self()
+            return getattr(log, str(name))(*args, **kwargs)
+        wrapper.__name__ = str(name)
+        return wrapper
 
 
 def check_sudo():
@@ -130,6 +176,8 @@ class Pipe(object):
             kwargs['shell'] = kwargs.pop('sh')
         if 'combine_stderr' in kwargs:
             kwargs.pop('combine_stderr')
+            kwargs['stderr'] = STDOUT
+        if kwargs.get('stderr') == 1:
             kwargs['stderr'] = STDOUT
         if 'pipe' in kwargs:
             if not kwargs.pop('pipe'):
@@ -256,7 +304,7 @@ class Pipe(object):
                 kwargs = dict(
                     stdin=stdin, stderr=PIPE,
                     stdout=PIPE
-                    )
+                )
                 kwargs.update(cmd.kwargs)
                 env_ = kwargs.pop('env', env)
 
@@ -290,7 +338,7 @@ class Pipe(object):
         kw = dict(
             stdin=sys.stdin, stderr=PIPE,
             stdout=PIPE
-            )
+        )
         kw.update(kwargs)
         if pool_size is None:
             import multiprocessing
@@ -674,6 +722,13 @@ class ModuleWrapper(types.ModuleType):
     __getitem__ = __getattr__
 
 
+logopts = Log()
+info = logopts.log('info')
+debug = logopts.log('debug')
+error = logopts.log('error')
+warn = logopts.log('warn')
+exc = logopts.log('exception')
+
 env = Environ(os.environ.copy())
 sh = Chut('sh')
 sudo = Chut('sudo', '-s')
@@ -734,8 +789,17 @@ def requires(*requirements, **kwargs):
 class console_script(object):
     """A decorator to take care of sys.argv via docopt"""
 
+    options = (
+        '-q, --quiet             Quiet (No output)\n'
+        '--debug                 Debug mode (More output)\n'
+    )
+
     def __init__(self, *args, **opts):
         self._console_script = True
+        self.logopts = opts.pop('logopts', {})
+        for k in ('fmt', 'stream'):
+            if k in opts:
+                self.logopts[k] = opts.pop(k)
         self.docopts = opts
         self.func = self.doc = None
         self.wraps(args)
@@ -758,8 +822,12 @@ class console_script(object):
                 doc = 'Usage: %prog'
             name = self.func.__name__.replace('_', '-')
             doc = doc.replace('%prog', name).strip()
+            doc = doc.replace('%logopts', self.options)
             doc = doc.replace('\n    ', '\n')
             self.doc = doc
+
+            if 'name' not in self.logopts:
+                self.logopts['name'] = name
         return self
 
     def main(self, arguments=None):
@@ -771,6 +839,7 @@ class console_script(object):
         if arguments.get('--version') is True:
             res = self.version()
         else:
+            logopts(arguments, **self.logopts)
             try:
                 res = self.func(arguments)
             except KeyboardInterrupt:
