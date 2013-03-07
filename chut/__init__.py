@@ -843,8 +843,17 @@ class console_script(object):
             logopts(arguments, **self.logopts)
             try:
                 res = self.func(arguments)
-            except KeyboardInterrupt:
+            except KeyboardInterrupt:  # pragma: no cover
                 sys.exit(1)
+            except Exception:  # pragma: no cover
+                if arguments.get('--debug'):
+                    print(('> Entering python debuger. '
+                           'Use h for help, q to quit.'))
+                    import pdb
+                    pdb.post_mortem()
+                    return 1
+                else:
+                    raise
         return res if ret else sys.exit(res)
 
     def __call__(self, *args, **kwargs):
