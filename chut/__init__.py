@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 import os
+import re
 import sys
 import six
 import stat
@@ -174,10 +175,10 @@ class Pipe(object):
         self.kwargs = kwargs
         if 'sh' in kwargs:
             kwargs['shell'] = kwargs.pop('sh')
+        if kwargs.get('stderr') == 1:
+            kwargs['stderr'] = STDOUT
         if 'combine_stderr' in kwargs:
             kwargs.pop('combine_stderr')
-            kwargs['stderr'] = STDOUT
-        if kwargs.get('stderr') == 1:
             kwargs['stderr'] = STDOUT
         if 'pipe' in kwargs:
             if not kwargs.pop('pipe'):
@@ -768,7 +769,7 @@ def requires(*requirements, **kwargs):
         urllib.urlretrieve(url, '/tmp/_virtualenv.py')
         sh[sys.executable]('-S /tmp/_virtualenv.py', venv) > 1
         sh.rm('/tmp/_virtualenv*', shell=True)
-        print('Installing %s...' % ', '.join(requirements))
+        info('Installing %s...' % ', '.join(requirements))
         sh.pip('install -qM', *requirements) > 1
     elif env.chut_virtualenv:
         upgrade = '--upgrade' in sys.argv
@@ -778,7 +779,7 @@ def requires(*requirements, **kwargs):
             installed = str(sh.pip('freeze')).lower()
         requirements = [r for r in requirements if r.lower() not in installed]
         if requirements:
-            print('Updating %s...' % ', '.join(requirements))
+            info('Updating %s...' % ', '.join(requirements))
             sh.pip('install -qM --upgrade', *requirements) > 1
     executable = os.path.join(bin_dir, 'python')
     if not env.chut_virtualenv:
@@ -790,9 +791,9 @@ class console_script(object):
     """A decorator to take care of sys.argv via docopt"""
 
     options = (
-        '-q, --quiet             Quiet (No output)\n'
-        '--debug                 Debug mode (More output)\n'
-        '-h, --help              Show this help\n'
+        ('-q, --quiet', 'Quiet (No output)'),
+        ('--debug', 'Debug mode (More output / pdb on failure)'),
+        ('-h, --help', 'Show this help'),
     )
 
     def __init__(self, *args, **opts):
@@ -823,7 +824,18 @@ class console_script(object):
                 doc = 'Usage: %prog'
             name = self.func.__name__.replace('_', '-')
             doc = doc.replace('%prog', name).strip()
-            doc = doc.replace('%options', self.options.strip())
+            if '%options' in doc:
+                def options(match):
+                    l = match.groups()[-1]
+                    if l is not None:
+                        fmt = '{0:<%s}{1}\n' % l.strip('-s')
+                    else:
+                        fmt = '{0:<20}{1}\n'
+                    opts = ''
+                    for opt in self.options:
+                        opts += fmt.format(*opt)
+                    return opts
+                doc = re.sub('(%options)(-[0-9]+s)*', options, doc)
             doc = doc.replace('\n    ', '\n')
             self.doc = doc
 
@@ -847,8 +859,8 @@ class console_script(object):
                 sys.exit(1)
             except Exception:  # pragma: no cover
                 if arguments.get('--debug'):
-                    print(('> Entering python debuger. '
-                           'Use h for help, q to quit.'))
+                    info(('> Entering python debuger. '
+                          'Use h for help, q to quit.'))
                     import pdb
                     pdb.post_mortem()
                     return 1
@@ -945,10 +957,10 @@ class Generator(object):
                     fd.write("\nif __name__ == '__main__':\n    %s()\n" % name)
             executable = sh.chmod('+x', script)
             if executable:
-                print(executable.commands_line)
+                info(executable.commands_line)
                 scripts.append(script)
             else:
-                print('failed to generate %s' % script)
+                error('failed to generate %s' % script)
         return scripts
 
     def __call__(self, location):

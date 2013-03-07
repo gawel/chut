@@ -38,7 +38,7 @@ import chut as sh
 import os
 
 
-@sh.console_script
+@sh.console_script(fmt='msg')
 def chutify(args):
     """
     Usage: %prog [options] [<location>]
@@ -57,14 +57,14 @@ def chutify(args):
 
     Options:
 
-    -h, --help                 Print this help
-    -v, --version              Print script version
-    -l, --loop                 Generate scripts when the source change
-    -s NAME, --section NAME    Use NAME section in .chut [default: chut]
-    --devel                    Install develop scripts in bin/
-    --upgrade                  Upgrade virtualenv dependencies
-    -d DIR, --destination=DIR  Destination [default: dist/scripts]
-    -i X, --interpreter=X      Python interpreter to use
+    -v, --version                 Print script version
+    -l, --loop                    Generate scripts when the source change
+    -s NAME, --section NAME       Use NAME section in .chut [default: chut]
+    --devel                       Install develop scripts in bin/
+    --upgrade                     Upgrade virtualenv dependencies
+    -d DIR, --destination=DIR     Destination [default: dist/scripts]
+    -i X, --interpreter=X         Python interpreter to use
+    %options-30s
     """
     config = sh.ini('.chut')
     if sh.env.git_dir:
