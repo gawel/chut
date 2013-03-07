@@ -792,6 +792,7 @@ class console_script(object):
     options = (
         '-q, --quiet             Quiet (No output)\n'
         '--debug                 Debug mode (More output)\n'
+        '-h, --help              Show this help\n'
     )
 
     def __init__(self, *args, **opts):
@@ -822,7 +823,7 @@ class console_script(object):
                 doc = 'Usage: %prog'
             name = self.func.__name__.replace('_', '-')
             doc = doc.replace('%prog', name).strip()
-            doc = doc.replace('%logopts', self.options)
+            doc = doc.replace('%options', self.options.strip())
             doc = doc.replace('\n    ', '\n')
             self.doc = doc
 

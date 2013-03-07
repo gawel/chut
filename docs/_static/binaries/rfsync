@@ -38,7 +38,7 @@ from chut import *  # NOQA
 import sys
 
 
-@console_script
+@console_script(fmt='msg')
 def rfsync(args):
     """
     Usage: %prog [-p] <host>:<path> [-- <find_options>...]
@@ -66,7 +66,7 @@ def rfsync(args):
         options = ' '.join(options)
         done = set()
         with sh.pipes(srv.find(p, options, shell=True)) as cmd:
-            print(repr(cmd))
+            info(repr(cmd))
             for line in cmd:
                 line = line.strip()
                 if args['-p']:
@@ -79,17 +79,16 @@ def rfsync(args):
         destination = path.expanduser(path.expandvars(destination))
         options = ' '.join(args.get('<rsync_options>', [])) or '-aP'
         targets = sys.stdin.readlines()
-        targets = [p.strip('\n/') for p in targets]
-        targets = [p.strip('/ ') for p in targets if p.strip('/ ')]
+        targets = [t.strip('\n/') for t in targets]
+        targets = [t.strip('/ ') for t in targets if p.strip('/ ')]
         targets = sorted(set(targets))
         if not targets:
             return 1
         if '-q' not in options:
-            print('$ rsync %s \\\n\t%s \\\n\t%s' % (
-                                    options,
-                                    ' \\\n\t'.join(targets),
-                                    destination
-                                  ))
+            info('$ rsync %s \\\n\t%s \\\n\t%s',
+                 options,
+                 ' \\\n\t'.join(targets),
+                 destination)
         rsync(options, ' '.join(targets), destination, shell=True) > 1
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ def extract_numbers(f):
     return episode
 
 
-@console_script
+@console_script(fmt='brief')
 def vlserie(args):
     """
     Usage: %prog [options] [<season> <episode>]
@@ -26,16 +26,17 @@ def vlserie(args):
     Require vlc or mplayer.
 
     Options:
-    -l,--latest     Play latest instead of next
-    --loop          Loop over episodes
-    -h              Show this help
+
+    -l, --latest            Play latest instead of next
+    --loop                  Loop over episodes
+    %options
     """
 
     config = ini('~/.vlserie')
     config.write()
 
     player = config.player.binary or 'vlc'
-    print(player)
+    debug('Using %s player', player)
 
     def play(filename, episode):
         if player == 'vlc':
@@ -43,7 +44,7 @@ def vlserie(args):
         elif player == 'mplayer':
             cmdline = '-fs %r' % filename
         else:
-            print('Unknown player %r' % player)
+            error('Unknown player %r', player)
             sys.exit(1)
         srts = find('-regex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
         for srt in sorted(srts):
@@ -52,7 +53,7 @@ def vlserie(args):
             elif player == 'mplayer':
                 cmdline += ' -sub %r' % srt
         cmd = sh[player](cmdline, combine_stderr=True, shell=True)
-        print(repr(cmd))
+        info(repr(cmd))
         serie.latest = filename
         config.write()
         try:
@@ -64,8 +65,9 @@ def vlserie(args):
 
     serie = config[path.abspath('.')]
 
-    filenames = find('. -iregex ".*s[0-9]+\s*e\s*[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
-                     shell=True)
+    filenames = find(
+        '. -iregex ".*s[0-9]+\s*e\s*[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
+        shell=True)
     filenames = [path.basename(f) for f in filenames]
     filenames = sorted([(extract_numbers(f), f) for f in filenames])
 
