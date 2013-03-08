@@ -33,10 +33,10 @@ class Recipe(object):
             print('$ %s' % line)
             if ' ' in line:
                 binary, args = line.split(' ', 1)
-                sh[binary](args) > 2
+                sh[binary](args, stderr=1) > 2
             else:
                 binary = line
-                sh[line]() > 2
+                sh[line](stderr=1) > 2
         return ()
 
     def install(self):
