@@ -409,7 +409,7 @@ class Pipe(object):
         if stdout is not None:
             if hasattr(stdout, 'read'):
                 output = stdout.read().rstrip()
-            else:
+            else:  # pragma: no cover
                 output = b''.join(list(stdout)).rstrip()
             output = self._decode(output)
         else:
