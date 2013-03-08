@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.7.1'
+version = '0.8'
 
 setup(name='chut',
       version=version,
@@ -14,7 +14,7 @@ setup(name='chut',
           'Programming Language :: Python :: 2.6',
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
-          ],
+      ],
       keywords='sh shell bash',
       author='Gael Pasgrimaud',
       author_email='gael@gawel.org',
