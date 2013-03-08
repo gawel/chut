@@ -15,6 +15,8 @@ class Recipe(object):
     def scripts(self):
         from chut.scripts import chutify
         args = ['--destination', self.options.get('destination')]
+        if self.options.get('devel'):
+            args.append('--devel')
         for line in self.options.get('locations', '.').split():
             chutify(args + [line])
 

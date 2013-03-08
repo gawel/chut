@@ -9,3 +9,8 @@ destination = docs/_static/binaries
 run =
     docs/_static/binaries/example
 
+[tests]
+destination = bin
+run =
+    ls
+    ls .

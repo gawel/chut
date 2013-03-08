@@ -73,7 +73,7 @@ class Log(object):
                 fmt = '%(asctime)s %(levelname)-6s %(name)s %(message)s'
             logging.basicConfig(stream=stream, format=fmt)
 
-        if not log.level:
+        if not log.level:  # pragma: no cover
             if args.get('--quiet'):
                 level = logging.ERROR
             elif args.get('--debug'):
@@ -256,11 +256,8 @@ class Pipe(object):
             args.append(cmd)
         else:
             args.extend(binary.split())
-            if isinstance(self.args, list):
-                for a in self.args:
-                    args.extend(a.split())
-            else:
-                args.extend(self.args.split(" "))
+            for a in self.args:
+                args.extend(a.split())
 
         args = [a for a in args if a]
 
@@ -373,11 +370,11 @@ class Pipe(object):
                     if result > 0 and stop_on_failure:
                         args = None
                         for index, cmd, p in processes:
-                            if p.poll() is None:
+                            if p.poll() is None:  # pragma: no cover
                                 p.kill()
                         cmd._raise(output=output)
             time.sleep(.1)
-        if out_index < len(results):
+        if out_index < len(results):  # pragma: no cover
             yield results[out_index]
             out_index += 1
 
@@ -405,6 +402,8 @@ class Pipe(object):
             if kwargs.get('shell'):
                 cmd.kwargs['shell'] = True
             if kwargs.get('combine_stderr'):
+                cmd.kwargs['stderr'] = STDOUT
+            if kwargs.get('stderr'):
                 cmd.kwargs['stderr'] = STDOUT
         stdout = self.stdout
         if stdout is not None:
@@ -587,7 +586,8 @@ class Base(object):
     def set_debug(self, enable=True):
         if enable:
             log.setLevel(logging.DEBUG)
-            log.addHandler(logging.StreamHandler(sys.stdout))
+            if not log.handlers:
+                log.addHandler(logging.StreamHandler(sys.stdout))
         else:
             log.setLevel(logging.INFO)
 
@@ -632,16 +632,12 @@ class Chut(Base):
 
     def cd(self, directory):
         """Change the current directory"""
-        if self.__name__ not in ('sh', 'sudo'):
-            raise ImportError('You can only run cd in local commands')
         directory = os.path.realpath(directory)
         os.chdir(directory)
         env.pwd = directory
 
     def pwd(self):
         """return os.path.abspath(os.getcwd())"""
-        if self.__name__ not in ('sh', 'sudo'):
-            raise ImportError('You can only use pwd in local commands')
         return os.path.abspath(os.getcwd())
 
     def stdin(self, value):
@@ -678,6 +674,12 @@ class SSH(Base):
             quote = quote.encode('ascii')
         return host + quote + escape(p) + quote
 
+    def cd(self, *args):
+        raise NotImplementedError('cd does not work with ssh')
+
+    def pwd(self):
+        raise NotImplementedError('pwd does not work with ssh')
+
     @property
     def host(self):
         return self._cmd_args[-1]
@@ -713,7 +715,7 @@ class ModuleWrapper(types.ModuleType):
         if attr == '__all__':
             if self.__name__ == 'chut':
                 return [str(c) for c in __all__]
-            else:
+            else:  # pragma: no cover
                 raise ImportError('You cant import things that does not exist')
         if hasattr(self.mod, attr):
             return getattr(self.mod, attr)
@@ -750,20 +752,20 @@ def requires(*requirements, **kwargs):
     """Add extra dependencies in a virtualenv"""
     if '/.tox/' in sys.executable:
         venv = os.path.dirname(os.path.dirname(sys.executable))
-    elif env.virtual_env:
+    elif env.virtual_env:  # pragma: no cover
         venv = env.chut_virtualenv = env.virtual_env
-    else:
+    else:  # pragma: no cover
         venv = os.path.expanduser(kwargs.get('venv', '~/.chut/venv'))
-    if not env.pip_download_cache:
+    if not env.pip_download_cache:  # pragma: no cover
         env.pip_download_cache = os.path.expanduser('~/.chut/cache')
         sh.mkdir('-p', env.pip_download_cache)
     bin_dir = os.path.join(venv, 'bin')
-    if bin_dir not in env.path:
+    if bin_dir not in env.path:  # pragma: no cover
         env.path = [bin_dir] + env.path
     requirements = list(requirements)
     if 'chut' not in requirements:
         requirements.insert(0, 'chut')
-    if not test.d(venv):
+    if not test.d(venv):  # pragma: no cover
         import urllib
         url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
         urllib.urlretrieve(url, '/tmp/_virtualenv.py')
@@ -773,16 +775,16 @@ def requires(*requirements, **kwargs):
         sh.pip('install -qM', *requirements) > 1
     elif env.chut_virtualenv:
         upgrade = '--upgrade' in sys.argv
-        if (env.chut_upgrade or upgrade):
+        if (env.chut_upgrade or upgrade):  # pragma: no cover
             installed = ''
         else:
             installed = str(sh.pip('freeze')).lower()
         requirements = [r for r in requirements if r.lower() not in installed]
-        if requirements:
+        if requirements:  # pragma: no cover
             info('Updating %s...' % ', '.join(requirements))
             sh.pip('install -qM --upgrade', *requirements) > 1
     executable = os.path.join(bin_dir, 'python')
-    if not env.chut_virtualenv:
+    if not env.chut_virtualenv:  # pragma: no cover
         env.chut_virtualenv = venv
         os.execve(executable, [executable] + sys.argv, env)
 
@@ -806,7 +808,7 @@ class console_script(object):
         self.func = self.doc = None
         self.wraps(args)
 
-    def version(self):
+    def version(self):  # pragma: no cover
         version = getattr(sys.modules['__main__'], 'version', 'unknown')
         print('%s %s' % (self.func.__name__, version))
 
@@ -849,7 +851,7 @@ class console_script(object):
         if ret:
             self.docopts['argv'] = arguments
         arguments = docopt.docopt(self.doc, **self.docopts)
-        if arguments.get('--version') is True:
+        if arguments.get('--version') is True:  # pragma: no cover
             res = self.version()
         else:
             logopts(arguments, **self.logopts)
@@ -913,7 +915,7 @@ class Generator(object):
                 'six', 'docopt', 'ConfigObject', sys.modules[__name__]
             ] + list(modules)
             modules = ''.join([self.encode_module(m) for m in modules])
-        else:
+        else:  # pragma: no cover
             # get source from _chut_modules
             modules = ''
             for name, data in _chut_modules:
@@ -933,13 +935,13 @@ class Generator(object):
 
         scripts = []
         loop = '--loop' in sys.argv or '-l' in sys.argv
-        while not os.path.isfile(filename):
+        while not os.path.isfile(filename):  # pragma: no cover
             time.sleep(.1)
         mtime = os.stat(filename)[stat.ST_MTIME]
         for func_name in sorted(set(console_scripts)):
             name = func_name[4:].split('(')[0]
             script = os.path.join(self.dest, name.replace('_', '-'))
-            if os.path.isfile(script) and loop:
+            if os.path.isfile(script) and loop:  # pragma: no cover
                 smtime = os.stat(script)[stat.ST_MTIME]
                 if mtime <= smtime:
                     continue
@@ -959,7 +961,7 @@ class Generator(object):
             if executable:
                 info(executable.commands_line)
                 scripts.append(script)
-            else:
+            else:  # pragma: no cover
                 error('failed to generate %s' % script)
         return scripts
 

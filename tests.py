@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from chut.recipe import Recipe
 from chut.scripts import chutify
+from six.moves import StringIO
 import chut as sh
 import unittest
 import six
@@ -28,9 +29,37 @@ class Chut(unittest.TestCase):
         self.assertEqual(repr(sh.cat('-') | w),
                          repr(str('cat - | w()')))
 
+        self.assertEqual(str('<sh>'), repr(sh.sh))
+
     def test_environ(self):
         env = sh.env(tmp='tmp')
         self.assertEqual(env.tmp, 'tmp')
+        del env.tmp
+        self.assertEqual(env.tmp, None)
+
+    def test_debug(self):
+        sh.set_debug(False)
+        level = sh.log.level
+        sh.set_debug(True)
+        self.assertNotEqual(level, sh.log.level)
+        sh.set_debug(False)
+        self.assertEqual(level, sh.log.level)
+
+    def test_stdout(self):
+        s = sh.Stdout('lkl')
+        self.assertEqual(s.stdout, s)
+
+    def test_iter_stdin(self):
+        self.assertTrue(isinstance(sh.stdin(b'blah').iter_stdout, int))
+        self.assertTrue(isinstance(sh.stdin('blah').iter_stdout, int))
+        if six.PY3:
+            self.assertTrue(isinstance(sh.stdin(StringIO('')).iter_stdout,
+                            StringIO))
+        else:
+            self.assertTrue(isinstance(sh.stdin(StringIO('')).iter_stdout,
+                            int))
+        with open(__file__, 'rb') as fd:
+            self.assertEqual(sh.stdin(fd).iter_stdout, fd)
 
     def test_slices(self):
         pipe = sh.cat('tmp') | sh.grep('tmp') | sh.wc('-l')
@@ -80,6 +109,21 @@ class Chut(unittest.TestCase):
         self.assertEqual(content,
                          str(sh.stdin(open(__file__, 'rb')) | sh.cat('-')))
 
+    def test_redirect_to_std(self):
+        ls = sh.ls()
+        with open('/tmp/stdout', 'wb+') as fd:
+            ls._sys_stdout = fd
+            ls._sys_stderr = fd
+            ls._write(1, 'x')
+            ls._write(2, 'x')
+            ls.args = ['/none']
+            sh.log.handlers = []
+            self.assertRaises(OSError, ls._write, 1, 'x')
+
+    def test_stdin_to_std(self):
+        with open(__file__, 'rb') as stdin:
+            sh.stdin(stdin) > '/tmp/stdout'
+
     def test_redirect_stdin(self):
         sh.stdin(b'blah') > 'tmp'
         self.assertEqual(str(sh.cat('tmp')), 'blah')
@@ -113,6 +157,17 @@ class Chut(unittest.TestCase):
         sh.stdin(six.b('#!/bin/bash\necho gawel')) > 'sudo'
         self.assertRaises(OSError, sh.check_sudo)
 
+    def test_ssh(self):
+        self.assertRaises(NotImplementedError, sh.ssh('x').cd, '/tmp')
+        self.assertRaises(NotImplementedError, sh.ssh('x').pwd)
+
+    def test_version(self):
+        @sh.console_script
+        def w(args):
+            """Usage: %prog [--version]"""
+            pass
+        self.assertRaises(SystemExit, w.main, {'--version': True})
+
     def test_cd(self):
         pwd = sh.pwd()
         sh.cd('..')
@@ -136,14 +191,19 @@ class Chut(unittest.TestCase):
     def test_chutify(self):
         self.assertEqual(chutify(['chut/scripts.py']), 0)
         self.assertEqual(chutify(['.']), 0)
+        self.assertEqual(chutify(['-s', 'tests']), 0)
+        self.assertEqual(chutify(['.git']), 0)
 
     def test_recipe(self):
         r = Recipe({'buildout': {'directory': os.getcwd()}},
-                    'chut', {'destination': 'dist/scripts',
-                             'run': 'ls\nls .\n '})
+                   'chut', {'destination': 'dist/scripts',
+                            'run': 'ls\nls .\n '})
         self.assertEqual(r.install(), ())
         r = Recipe({'buildout': {'directory': os.getcwd()}},
-                    'chut', {'destination': 'dist/scripts'})
+                   'chut', {'destination': 'dist/scripts'})
+        self.assertEqual(r.update(), ())
+        r = Recipe({'buildout': {'directory': os.getcwd()}},
+                   'chut', {'devel': 'true', 'run': 'ls'})
         self.assertEqual(r.update(), ())
 
     def test_map(self):
@@ -153,6 +213,8 @@ class Chut(unittest.TestCase):
     def test_call_opts(self):
         self.assertEqual(str(sh.ls('.')), str(sh.ls('.', shell=True)))
         self.assertEqual(str(sh.ls('.')), str(sh.ls('.')(shell=True)))
+        self.assertEqual(str(sh.ls('.')), str(sh.ls('.', stderr=1)))
+        self.assertEqual(str(sh.ls('.')), str(sh.ls('.')(stderr=1)))
         self.assertEqual(str(sh.ls('.')), str(sh.ls('.', combine_stderr=True)))
         self.assertEqual(str(sh.ls('.')), str(sh.ls('.')(combine_stderr=True)))
 

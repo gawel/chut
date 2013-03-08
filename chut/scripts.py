@@ -32,13 +32,13 @@ def chutify(args):
     %options-30s
     """
     config = sh.ini('.chut')
-    if sh.env.git_dir:
+    if sh.env.git_dir:  # pragma: no cover
         cfg = config['githook'] or config[args['--section']]
     else:
         cfg = config[args['--section']]
 
     interpreter = args['--interpreter'] or cfg.interpreter or 'python'
-    if interpreter in ('2', '3'):
+    if interpreter in ('2', '3'):  # pragma: no cover
         interpreter = 'python' + interpreter
     args['--interpreter'] = interpreter
 
@@ -54,13 +54,13 @@ def chutify(args):
             filename = __file__.replace('.pyc', '.py')
             script = generator(filename)[0]
             sh.mv(script, hook)
-        else:
+        else:  # pragma: no cover
             # install git hook
             sh.cp(__file__, hook)
         executable = sh.chmod('+x', hook)
         if executable:
             print(executable.commands_line)
-        return
+        return 0
 
     if cfg.destination and args['--destination'] == 'dist/scripts':
         args['--destination'] = cfg.destination
@@ -81,7 +81,7 @@ def chutify(args):
                 sh[cmd]() > 2
         return scripts
 
-    if args['--loop']:
+    if args['--loop']:  # pragma: no cover
         import time
         while True:
             try:
@@ -91,9 +91,6 @@ def chutify(args):
                 return 0
     else:
         scripts = gen()
-        if sh.env.git_dir:
+        if sh.env.git_dir:  # pragma: no cover
             sh.git('add -f', *scripts) > 1
     return 0
-
-if __name__ == '__main__':
-    chutify()
