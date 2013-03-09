@@ -802,6 +802,7 @@ class console_script(object):
     options = (
         ('-q, --quiet', 'Quiet (No output)'),
         ('--debug', 'Debug mode (More output / pdb on failure)'),
+        ('-v, --version', 'Show version'),
         ('-h, --help', 'Show this help'),
     )
 
@@ -816,8 +817,10 @@ class console_script(object):
         self.wraps(args)
 
     def version(self):  # pragma: no cover
-        version = getattr(sys.modules['__main__'], 'version', 'unknown')
-        print('%s %s' % (self.func.__name__, version))
+        version = getattr(sys.modules['__main__'], '__version__', 'unknown')
+        py_version = sys.version.split(' ', 1)[0]
+        args = (self.func.__name__, version, py_version)
+        print('%s %s runing on python %s' % args)
 
     def wraps(self, args):
         if args:
@@ -957,6 +960,8 @@ class Generator(object):
                 if self.devel:
                     fd.write('sys.path.insert(0, "%s")\n' % dirname)
                     fd.write('import %s\n' % mod_name)
+                    fd.write('__version__ = getattr(%s, ' % mod_name)
+                    fd.write('"__version__", "unknown") + "-dev"\n')
                     fd.write('if __name__ == "__main__":\n')
                     fd.write('    %s.%s()\n' % (mod_name, name))
                 else:

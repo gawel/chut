@@ -3,6 +3,8 @@ from chut import *  # noqa
 import sys
 import re
 
+__version__ = '0.8'
+
 _episode = re.compile(r's([0-9]+)\s*e\s*([0-9]+)')
 
 
