@@ -26,21 +26,36 @@ Write a console script::
 
     $ cat << EOF > myscript.py
     from chut import *
+
+    __version__ = '0.1'
+
     @console_script
     def mycmd(args):
-        """Usage: %prog [-h] <directory>"""
+        """Usage: %prog [options] <directory>
+
+        Print all chut scripts found in <directory>
+
+        Options:
+
+        %options
+        """
         for filename in find('-name *.py') | grep('@console_script'):
             print(filename)
     EOF
 
-Run ``chutify``::
+Run ``chutify`` in development mode::
 
-    $ ./chutify --loop
+    $ ./chutify --devel
+    chmod +x bin/mycmd
+
+And use/debug the newly created script::
+
+    $ ./bin/mycmd -h
+
+When your script is ready for production then generate the standalone version::
+
+    $ ./chutify
     chmod +x dist/scripts/mycmd
-
-And use/debug the newly created standalone script::
-
-    $ ./dist/scripts/mycmd
 
 Also have a look at the `examples <https://chut.readthedocs.org/en/latest/examples.html>`_.
 
