@@ -100,6 +100,14 @@ def chutify(args):
     if cfg.destination and args['--destination'] == 'dist/scripts':
         args['--destination'] = cfg.destination
 
+    if os.path.isfile('setup.py'):
+        version = sh.grep('-E ^version setup.py')
+        if version:
+            version = str(version).split('=')[1].strip('\'" ')
+            if 'dev' in version:
+                version = version.split('dev')[0].strip('.')
+            args['version'] = version
+
     generator = sh.Generator(**args)
 
     commands = cfg.run.as_list('\n')

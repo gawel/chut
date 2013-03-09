@@ -5,6 +5,8 @@ import six
 import sys
 import os
 
+__version__ = "0.9"
+
 __doc__ = """
 Usage: %prog [options] [-] [<text>...]
 
@@ -21,6 +23,7 @@ Options:
     -l LANGS, --langs=LANGS     Langs [default: en:fr]
     -i, --interactive           Translate line by line in interactive mode
     -h, --help                  Show this help
+    %options
 """
 
 SCRIPT = six.b("""

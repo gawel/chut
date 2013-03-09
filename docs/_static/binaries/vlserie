@@ -130,5 +130,6 @@ def vlserie(args):
 
     for episode, filename in filenames:
         play(filename, episode)
+
 if __name__ == '__main__':
     vlserie()

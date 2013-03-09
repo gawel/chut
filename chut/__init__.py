@@ -949,15 +949,17 @@ class Generator(object):
         while not os.path.isfile(filename):  # pragma: no cover
             time.sleep(.1)
         mtime = os.stat(filename)[stat.ST_MTIME]
+        if console_scripts and self.version:
+            version = sh.grep('-E ^__version__', filename)
+            if version:
+                version = str(version).split('=')[1].strip('\'" ')
+                if version != self.version:
+                    info('bump %s version from %s to %s',
+                         posixpath.basename(filename), version, self.version)
+                    sh.sed((
+                        '-i \'s/^__version__ =.*/__version__ = "%s"/\''
+                    ) % self.version, filename, shell=True) > 1
         for func_name in sorted(set(console_scripts)):
-            if self.version:
-                if sh.grep('-E ^__version__', filename):
-                    info('%s > %s', filename, self.version)
-                    res = str(sh.sed((
-                        '\'s/^__version__ =.*/__version__ = "%s"/\''
-                    ) % self.version, filename, shell=True))
-                    sh.stdin(res) > filename
-                continue
             name = func_name[4:].split('(')[0]
             script = os.path.join(self.dest, name.replace('_', '-'))
             if os.path.isfile(script) and loop:  # pragma: no cover
