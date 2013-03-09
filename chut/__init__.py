@@ -20,6 +20,13 @@ from copy import deepcopy
 from ConfigObject import ConfigObject
 from contextlib import contextmanager
 
+try:
+    from fabric import api as fabric
+except ImportError:
+    HAS_FABRIC = False
+else:  # pragma: no cover
+    HAS_FABRIC = True
+
 __all__ = [
     'logopts', 'info', 'debug', 'error', 'exc',  # logging
     'console_script', 'requires', 'sh', 'env', 'ini', 'stdin', 'test',
@@ -1013,6 +1020,56 @@ for name, code in _chut_modules:
         sys.modules[name] = mod
 from chut import env
 '''.lstrip()
+
+##########
+# Fabric #
+##########
+
+
+class Fab(object):
+
+    dirname = '.chutifab'
+    scripts = ()
+
+    def _run(self, meth, script, *args, **kwargs):  # pragma: no cover
+        if script not in self.scripts:
+            scripts = sorted(sh.ls('.chutifab'))
+            fabric.abort((
+                'No such script {0}. Available scripts are:\n\n- {1}'
+            ).format(script, '\n- '.join(scripts)))
+        if HAS_FABRIC:
+            meth = getattr(fabric, meth)
+            with fabric.settings(fabric.hide('stdout', 'running')):
+                res = meth(('test -d ~/{0} || mkdir ~/{0} && chmod 700 ~/{0}; '
+                            'echo $HOME/{0}').format(self.dirname))
+                remote = posixpath.join(res, script)
+                fabric.put('.chutifab/' + script, remote, mode=0o700,
+                           use_sudo=bool(meth.__name__ == 'sudo'))
+            cmd = '{0} {1}'.format(remote, ' '.join(args))
+            res = meth(cmd, **kwargs)
+            return res
+
+    def chutifab(self, location='.'):
+        """Generate chut scripts contained in location"""
+        l = logging.getLogger(posixpath.basename(sys.argv[0]))
+        level = l.level
+        l.setLevel(logging.WARN)
+        Generator(location=location, destination='.chutifab')(location)
+        l.setLevel(level)
+        self.scripts = sorted(sh.ls('.chutifab'))
+        return self.scripts
+
+    def run(self, script, *args, **kwargs):
+        """Upload a script and run it. ``*args`` are used as command line
+        arguments. ``**kwargs`` are passed to `fabric`'s `run`"""
+        return self._run('run', script, *args, **kwargs)
+
+    def sudo(self, script, *args, **kwargs):
+        """Upload a script and run it using sudo. ``*args`` are used as command
+        line arguments. ``**kwargs`` are passed to `fabric`'s `sudo`"""
+        return self._run('sudo', script, *args, **kwargs)
+
+fab = Fab()
 
 if __name__ != '__main__':
     mod = sys.modules[__name__]

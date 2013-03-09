@@ -16,6 +16,7 @@ Documentation
    ssh.rst
    chut.rst
    chutify.rst
+   fabric.rst
    examples.rst
 
 

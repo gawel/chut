@@ -218,6 +218,12 @@ class Chut(unittest.TestCase):
         self.assertEqual(str(sh.ls('.')), str(sh.ls('.', combine_stderr=True)))
         self.assertEqual(str(sh.ls('.')), str(sh.ls('.')(combine_stderr=True)))
 
+    def test_fab(self):
+        fab = sh.fab
+        fab.chutifab(location='.')
+        fab.run('safe-upgrade', '-h')
+        fab.sudo('safe-upgrade', '-h')
+
     def tearDown(self):
         sh.rm('-f tmp')
         sh.rm('-f sudo')
