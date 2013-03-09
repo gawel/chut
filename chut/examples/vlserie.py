@@ -39,6 +39,9 @@ def vlserie(args):
     debug('Using %s player', player)
 
     def play(filename, episode):
+        filename = path.abspath(filename)
+        dirname, filename = path.split(filename)
+        cd(dirname)
         if player == 'vlc':
             cmdline = '-f --qt-minimal-view %r' % filename
         elif player == 'mplayer':
@@ -46,14 +49,21 @@ def vlserie(args):
         else:
             error('Unknown player %r', player)
             sys.exit(1)
-        srts = find('-regex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
+        srts = find('-iregex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
         for srt in sorted(srts):
+            srt = srt.lstrip('./')
             if player == 'vlc':
                 cmdline += ' --sub-file %r' % srt
             elif player == 'mplayer':
                 cmdline += ' -sub %r' % srt
+        subs = find('-iregex ".*%s\(x\|E\)%02i.*sub"' % episode, shell=True)
+        for sub in sorted(subs):
+            if player == 'mplayer':
+                sub = sub.lstrip('./')
+                cmdline += ' -vobsub %r' % sub[-4]
         cmd = sh[player](cmdline, combine_stderr=True, shell=True)
         info(repr(cmd))
+        serie = config[dirname]
         serie.latest = filename
         config.write()
         try:
@@ -68,7 +78,7 @@ def vlserie(args):
     filenames = find(
         '. -iregex ".*s[0-9]+\s*e\s*[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
         shell=True)
-    filenames = [path.basename(f) for f in filenames]
+    filenames = [path.abspath(f) for f in filenames]
     filenames = sorted([(extract_numbers(f), f) for f in filenames])
 
     if args['<season>']:
