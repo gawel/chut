@@ -220,7 +220,8 @@ class Chut(unittest.TestCase):
 
     def test_fab(self):
         fab = sh.fab
-        fab.chutifab(location='.')
+        fab.chutifab()
+        fab.chutifab('.')
         fab.run('safe-upgrade', '-h')
         fab.sudo('safe-upgrade', '-h')
 

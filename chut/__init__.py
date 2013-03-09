@@ -1029,7 +1029,7 @@ from chut import env
 class Fab(object):
 
     dirname = '.chutifab'
-    scripts = ()
+    scripts = []
 
     def _run(self, meth, script, *args, **kwargs):  # pragma: no cover
         if script not in self.scripts:
@@ -1049,12 +1049,15 @@ class Fab(object):
             res = meth(cmd, **kwargs)
             return res
 
-    def chutifab(self, location='.'):
+    def chutifab(self, *args):
         """Generate chut scripts contained in location"""
         l = logging.getLogger(posixpath.basename(sys.argv[0]))
         level = l.level
         l.setLevel(logging.WARN)
-        Generator(location=location, destination='.chutifab')(location)
+        if not args:
+            args = ['.']
+        for location in args:
+            Generator(destination='.chutifab')(location)
         l.setLevel(level)
         self.scripts = sorted(sh.ls('.chutifab'))
         return self.scripts
