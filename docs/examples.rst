@@ -51,7 +51,7 @@ Get standalone `safe-upgrade <_static/binaries/safe-upgrade>`_
 translate
 =========================================================
 
-.. literalinclude:: ../chut/examples/translator.py
+.. literalinclude:: ../chut/examples/translate.py
    :language: python
 
 Get standalone `translate <_static/binaries/translate>`_
