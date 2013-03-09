@@ -891,6 +891,7 @@ class Generator(object):
     _modules = {}
 
     def __init__(self, **args):
+        self.version = args.get('--new-version') or args.get('version')
         self.devel = args.get('--devel') or args.get('devel')
         if self.devel:
             dest = 'bin'
@@ -949,6 +950,14 @@ class Generator(object):
             time.sleep(.1)
         mtime = os.stat(filename)[stat.ST_MTIME]
         for func_name in sorted(set(console_scripts)):
+            if self.version:
+                if sh.grep('-E ^__version__', filename):
+                    info('%s > %s', filename, self.version)
+                    res = str(sh.sed((
+                        '\'s/^__version__ =.*/__version__ = "%s"/\''
+                    ) % self.version, filename, shell=True))
+                    sh.stdin(res) > filename
+                continue
             name = func_name[4:].split('(')[0]
             script = os.path.join(self.dest, name.replace('_', '-'))
             if os.path.isfile(script) and loop:  # pragma: no cover
@@ -968,7 +977,9 @@ class Generator(object):
                     with open(filename) as mod:
                         fd.write(mod.read().replace('__main__',
                                                     '__chutified__'))
-                    fd.write("\nif __name__ == '__main__':\n    %s()\n" % name)
+                        fd.write((
+                            "\nif __name__ == '__main__':\n    %s()\n"
+                        ) % name)
             executable = sh.chmod('+x', script)
             if executable:
                 info(executable.commands_line)
