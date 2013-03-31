@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from chut import *  # noqa
+import shutil
 import sys
 import re
 
@@ -38,6 +39,11 @@ def vlserie(args):
     config.write()
 
     player = config.player.binary or 'vlc'
+    player_opts = config[player]
+    if env.display:
+        options = player_opts.xoptions
+    else:
+        options = player_opts.fboptions
     debug('Using %s player', player)
 
     def play(filename, episode):
@@ -45,15 +51,19 @@ def vlserie(args):
         dirname, filename = path.split(filename)
         cd(dirname)
         if player == 'vlc':
-            cmdline = '-f --qt-minimal-view %r' % filename
+            cmdline = '%s -f --qt-minimal-view %r' % (options, filename)
         elif player == 'mplayer':
-            cmdline = '-fs %r' % filename
+            cmdline = '%s -fs %r' % (options, filename)
         else:
             error('Unknown player %r', player)
             sys.exit(1)
         srts = find('-iregex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
         for srt in sorted(srts):
             srt = srt.lstrip('./')
+            if '  ' in srt:
+                new = srt.replace('  ', ' ')
+                shutil.move(srt, new)
+                srt = new
             if player == 'vlc':
                 cmdline += ' --sub-file %r' % srt
             elif player == 'mplayer':
@@ -62,7 +72,7 @@ def vlserie(args):
         for sub in sorted(subs):
             if player == 'mplayer':
                 sub = sub.lstrip('./')
-                cmdline += ' -vobsub %r' % sub[-4]
+                cmdline += ' -vobsub %r' % sub[:-4]
         cmd = sh[player](cmdline, combine_stderr=True, shell=True)
         info(repr(cmd))
         serie = config[dirname]

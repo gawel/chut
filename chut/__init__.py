@@ -128,8 +128,8 @@ def escape(value):
 def ini(filename, **defaults):
     """Load a .ini file in a ConfigObject. Dont raise if the file does not
     exist"""
-    filename = os.path.expanduser(filename)
-    defaults.update(home=os.path.expanduser('~'))
+    filename = sh.path(filename)
+    defaults.update(home=sh.path('~'))
     return ConfigObject(filename=filename, defaults=defaults)
 
 
@@ -157,6 +157,22 @@ class Environ(dict):
         for k, v in kwargs.items():
             setattr(environ, k, v)
         return environ
+
+
+class Path(object):
+
+    def __getattr__(self, attr):
+        return getattr(posixpath, attr)
+
+    @classmethod
+    def __call__(cls, *args):
+        if args:
+            value = posixpath.expandvars(
+                posixpath.expanduser(
+                    posixpath.join(*args)))
+        else:
+            value = str()
+        return value
 
 
 class Pipe(object):
@@ -473,7 +489,10 @@ class Pipe(object):
             return self._get_stdout('')
 
     def _write(self, filename, mode):
-        if isinstance(filename, int):
+        if filename in (0,):
+            with open('/dev/null', 'ab') as fd:
+                output = self._write_to(fd)
+        elif filename in (1, 2):
             if filename == 2:
                 fd = self._sys_stderr
             else:
@@ -618,7 +637,7 @@ class Base(object):
 
 class Chut(Base):
 
-    path = posixpath
+    path = Path()
 
     def wraps(self, func):
         return type(func.__name__, (PyPipe,), {'func': staticmethod(func)})()
