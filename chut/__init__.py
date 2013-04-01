@@ -25,7 +25,10 @@ try:
 except ImportError:
     HAS_FABRIC = False
 else:  # pragma: no cover
-    HAS_FABRIC = True
+    if 'nosetests' in sys.argv[0]:
+        HAS_FABRIC = False
+    else:
+        HAS_FABRIC = True
 
 __all__ = [
     'logopts', 'info', 'debug', 'error', 'exc',  # logging

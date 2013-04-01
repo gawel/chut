@@ -9,5 +9,5 @@ install:
  - pip install webob
  - pip install waitress
  - python setup.py develop
-script: nosetests
+script: nosetests tests
 

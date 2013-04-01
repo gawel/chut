@@ -8,6 +8,8 @@ import unittest
 import six
 import os
 
+os.environ['TESTING'] = '1'
+
 
 class Chut(unittest.TestCase):
 
