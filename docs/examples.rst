@@ -39,6 +39,15 @@ ssh-copy-id
 Get standalone `ssh-copy-id <_static/binaries/ssh-copy-id>`_
 
 
+ssh-mount
+=========================================================
+
+.. literalinclude:: ../chut/examples/ssh_mount.py
+   :language: python
+
+Get standalone `ssh-mount <_static/binaries/ssh-mount>`_
+
+
 safe-upgrade
 =========================================================
 
