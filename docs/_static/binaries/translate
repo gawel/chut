@@ -40,7 +40,7 @@ import six
 import sys
 import os
 
-__version__ = "0.9"
+__version__ = "0.10"
 
 __doc__ = """
 Usage: %prog [options] [-] [<text>...]
