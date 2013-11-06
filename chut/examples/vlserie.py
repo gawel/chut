@@ -4,7 +4,7 @@ import shutil
 import sys
 import re
 
-__version__ = "0.10"
+__version__ = "0.11"
 
 _episode = re.compile(r's([0-9]+)\s*e\s*([0-9]+)')
 
