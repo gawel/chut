@@ -34,7 +34,7 @@ __all__ = [
     'logopts', 'info', 'debug', 'error', 'exc',  # logging
     'console_script', 'requires', 'sh', 'env', 'ini', 'stdin', 'test',
     'ls', 'cat', 'grep', 'find', 'cut', 'tr', 'head', 'tail', 'sed', 'awk',
-    'nc', 'ping', 'nmap', 'hostname', 'host', 'scp', 'rsync', 'wget', 'curl',
+    'nc', 'ping', 'nmap', 'hostname', 'host', 'rsync', 'wget', 'curl',
     'cd', 'which', 'mktemp', 'echo', 'wc',
     'tar', 'gzip', 'gunzip', 'zip', 'unzip',
     'vlc', 'ffmpeg', 'convert',
@@ -45,7 +45,7 @@ __all__ = [
     'escape', 'e',  # e is escape()
 ]
 
-__not_piped__ = ['chmod', 'cp', 'mkdir', 'mv', 'rm', 'rmdir', 'touch']
+__not_piped__ = ['chmod', 'cp', 'scp', 'mkdir', 'mv', 'rm', 'rmdir', 'touch']
 
 __all__ += __not_piped__
 
@@ -344,6 +344,15 @@ class Pipe(object):
                 self.processes.append(p)
                 stdin = p.stdout
         return p
+
+    def execv(self):
+        cmd = self.command_line()
+        binary = sh.which(cmd.pop(0))
+        if binary:
+            binary = str(binary)
+            os.execve(binary, [binary] + cmd, env)
+        else:
+            raise OSError(binary)
 
     @property
     def stdout(self):
@@ -904,6 +913,8 @@ class console_script(object):
 
     def __call__(self, *args, **kwargs):
         return self.main(*args, **kwargs) if self.func else self.wraps(args)
+
+Chut.console_script = console_script
 
 
 class Generator(object):

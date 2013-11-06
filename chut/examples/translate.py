@@ -58,11 +58,14 @@ def translate(args):
     stdin(SCRIPT) > script
 
     def show_result():
-        for line in sh.casperjs(script):
-            if line:
-                if ':' in line:
-                    line = '- ' + line
-                print(line)
+        try:
+            for line in sh.casperjs(script):
+                if line:
+                    if ':' in line:
+                        line = '- ' + line
+                    print(line)
+        except:
+            pass
 
     if args['--interactive'] or not (args['-'] or args['<text>']):
         import readline
@@ -70,10 +73,9 @@ def translate(args):
         if test.f(hist):
             readline.read_history_file(hist)
         atexit.register(readline.write_history_file, hist)
-        from six.moves import input
         while True:
             try:
-                tr_text = input('%s: ' % env.tr_pair)
+                tr_text = six.moves.input('%s: ' % env.tr_pair)
                 tr_text = tr_text.strip()
             except KeyboardInterrupt:
                 return
