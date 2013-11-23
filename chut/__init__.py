@@ -32,7 +32,7 @@ else:  # pragma: no cover
 
 __all__ = [
     'logopts', 'info', 'debug', 'error', 'exc',  # logging
-    'console_script', 'requires', 'sh', 'env', 'ini', 'stdin', 'test',
+    'console_script', 'requires', 'sh', 'pipe', 'env', 'ini', 'stdin', 'test',
     'ls', 'cat', 'grep', 'find', 'cut', 'tr', 'head', 'tail', 'sed', 'awk',
     'nc', 'ping', 'nmap', 'hostname', 'host', 'rsync', 'wget', 'curl',
     'cd', 'which', 'mktemp', 'echo', 'wc',
