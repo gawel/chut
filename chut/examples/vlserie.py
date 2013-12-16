@@ -6,13 +6,14 @@ import re
 
 __version__ = "0.11"
 
-_episode = re.compile(r's([0-9]+)\s*e\s*([0-9]+)')
+_episode = re.compile(r'[^0-9]+(?P<s>[0-9]+)\s*(x|e)\s*(?P<e>[0-9]+)[^0-9]+')
 
 
 def extract_numbers(f):
-    season, episode = _episode.findall(f.lower())[0]
-    episode = int(season), int(episode)
-    return episode
+    m = _episode.search(f.lower())
+    if m:
+        m = m.groupdict()
+        return int(m['s']), int(m['e'])
 
 
 @console_script(fmt='brief')
@@ -88,16 +89,18 @@ def vlserie(args):
     serie = config[path.abspath('.')]
 
     filenames = find(
-        '. -iregex ".*s[0-9]+\s*e\s*[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
+        '. -iregex ".*[0-9]+\s*\(e\|x\)\s*[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
         shell=True)
     filenames = [path.abspath(f) for f in filenames]
     filenames = sorted([(extract_numbers(f), f) for f in filenames])
+    filenames = [(e, f) for e, f in filenames if f is not None]
+    print(filenames)
 
     if args['<season>']:
         episode = int(args['<season>']), int(args['<episode>'])
         filenames = [(x, f) for x, f in filenames if x >= episode]
     elif serie.latest:
-        episode = extract_numbers(serie.latest)
+        episode = extract_numbers(serie.latest.lower())
         if args['--latest']:
             filenames = [(x, f) for x, f in filenames if x >= episode]
         else:
