@@ -6,7 +6,8 @@ import re
 
 __version__ = "0.11"
 
-_episode = re.compile(r'[^0-9]+(?P<s>[0-9]+)\s*(x|e)\s*(?P<e>[0-9]+)[^0-9]+')
+_episode = re.compile(
+    r'[^0-9]+(?P<s>[0-9]+)\s*(x|e|episode)\s*(?P<e>[0-9]+)[^0-9]+')
 
 
 def extract_numbers(f):
@@ -89,12 +90,13 @@ def vlserie(args):
     serie = config[path.abspath('.')]
 
     filenames = find(
-        '. -iregex ".*[0-9]+\s*\(e\|x\)\s*[0-9]+.*\(avi\|wmv\|mkv\|mp4\)"',
+        ('. -iregex '
+         '".*[0-9]+\s*\(e\|x\|episode\)\s*[0-9]+.*'
+         '\(avi\|wmv\|mkv\|mp4\)"'),
         shell=True)
     filenames = [path.abspath(f) for f in filenames]
     filenames = sorted([(extract_numbers(f), f) for f in filenames])
     filenames = [(e, f) for e, f in filenames if f is not None]
-    print(filenames)
 
     if args['<season>']:
         episode = int(args['<season>']), int(args['<episode>'])
