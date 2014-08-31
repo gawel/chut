@@ -33,6 +33,7 @@ def vlserie(args):
     Options:
 
     -l, --latest            Play latest instead of next
+    -f, --freeplayer        Play in freeplayer
     --loop                  Loop over episodes
     %options
     """
@@ -52,7 +53,13 @@ def vlserie(args):
         filename = path.abspath(filename)
         dirname, filename = path.split(filename)
         cd(dirname)
-        if player == 'vlc':
+        if args['--freeplayer']:
+            cmdline = (
+                "%s %r --sout "
+                "'#transcode{vcodec=mp2v,vb=4096,scale=1,audio-sync,soverlay}:"
+                "duplicate{dst=std{access=udp,mux=ts,dst=212.27.38.253:1234}}'"
+            ) % (options, filename)
+        elif player == 'vlc':
             cmdline = '%s -f --qt-minimal-view %r' % (options, filename)
         elif player == 'mplayer':
             cmdline = '%s -fs %r' % (options, filename)
@@ -110,3 +117,25 @@ def vlserie(args):
 
     for episode, filename in filenames:
         play(filename, episode)
+
+
+@console_script
+def freeplayer(args):
+    """Usage: %prog [options] [<ifile>]
+
+    -s      Serve freeplayer page
+    """
+    if args["-s"]:
+        with open('/tmp/settings.html', 'w') as fd:
+            fd.write("""<html><body background="ts://127.0.0.1">
+                        </body></html>""")
+        cd('/tmp')
+        sh.python3('-m http.server 8080').execv()
+    cmdline = (
+        "%(<ifile>)r --sout "
+        "'#transcode{vcodec=mp2v,vb=4096,scale=1,audio-sync,soverlay}:"
+        "duplicate{dst=std{access=udp,mux=ts,dst=212.27.38.253:1234}}'"
+    ) % args
+    cmd = sh['vlc'](cmdline, combine_stderr=True, shell=True)
+    info(repr(cmd))
+    cmd > 1
