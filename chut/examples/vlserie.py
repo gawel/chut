@@ -121,7 +121,7 @@ def vlserie(args):
         play(filename, episode)
 
 
-@console_script
+@console_script(fmt='brief')
 def freeplayer(args):
     """Usage: %prog [options] [<stream>]
 
@@ -129,10 +129,10 @@ def freeplayer(args):
     """
     if args["-s"]:
         with open('/tmp/settings.html', 'w') as fd:
-            fd.write("""<html><body background="ts://127.0.0.1">
-                        </body></html>""")
-        cd('/tmp')
-        sh.python3('-m http.server 8080').execv()
+            fd.write(settings)
+        nc('-l -p 8080 -q 1 < /tmp/settings.html', shell=True) > 0
+        info('freeplayer initialized')
+        return
     stream = args['<stream>']
     if stream.startswith('https://'):
         stream.replace('https://', 'http://')
@@ -144,3 +144,6 @@ def freeplayer(args):
     cmd = sh['vlc'](cmdline, combine_stderr=True, shell=True)
     info(repr(cmd))
     cmd > 1
+
+settings = '''HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n
+<html><body background="ts://127.0.0.1"></body></html>'''
