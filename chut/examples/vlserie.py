@@ -59,7 +59,7 @@ def vlserie(args):
                 "'#transcode{vcodec=mp2v,vb=4096,scale=1,audio-sync,soverlay}:"
                 "duplicate{dst=std{access=udp,mux=ts,dst=212.27.38.253:1234}}'"
             ) % (options, filename)
-        elif player == 'vlc':
+        elif player in ('vlc', 'cvlc'):
             cmdline = (
                 '%s -f --play-and-exit --qt-minimal-view %r'
             ) % (options, filename)
@@ -75,7 +75,7 @@ def vlserie(args):
                 new = srt.replace('  ', ' ')
                 shutil.move(srt, new)
                 srt = new
-            if player == 'vlc':
+            if player in ('vlc', 'cvlc'):
                 cmdline += ' --sub-file %r' % srt
             elif player == 'mplayer':
                 cmdline += ' -sub %r' % srt
