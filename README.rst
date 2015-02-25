@@ -121,6 +121,3 @@ argument and return a code 1 if no address is found::
     ...     if sh.ifconfig(args['<iface>']) | sh.grep('inet addr:'):
     ...         return 1
 
-    >>> if __name__ == '__main__':
-    ...     got_inet_addr()
-

@@ -13,7 +13,7 @@ How it works
     >>> from chut import test
     >>> ch.rm('-Rf', 'dist/scripts').succeeded
     True
-    >>> ch.env['PATH'] = 'bin:/bin:/usr/bin:' + os.path.dirname(sys.executable)
+    >>> ch.env['PATH'] = os.path.dirname(sys.executable) + ':bin:/bin:/usr/bin:'
 
 Write a file with a function in it::
 
@@ -46,28 +46,3 @@ And check the result in ``dist/scripts``::
     Usage: my-script [-h]
     <BLANKLINE>
     -h, --help    Print this help
-
-Using virtualenv and pip
-=========================
-
-If you need some dependencies then the ``require`` function is made for you.
-
-Just add something like this in your code::
-
-    >>> from chut import requires
-    >>> requires('webob', venv="~/.chut/myapp")
-    >>> import webob
-
-This will install a virtualenv in ``~/.chut/myapp`` and your script will use it!
-
-
-..
-    >>> if test.x('/usr/bin/python2.7'):
-    ...   out = str(ch.pipe('python2.7', 'dist/scripts/my-script'))
-    ...   assert out.succeeded, out.stderr
-    >>> if test.x('/usr/bin/python3'):
-    ...   out = str(ch.pipe('python3', 'dist/scripts/my-script'))
-    ...   assert out.succeeded, out.stderr
-    >>> ch.rm('-f myscript.*', shell=True).succeeded
-    True
-

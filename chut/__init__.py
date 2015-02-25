@@ -9,6 +9,7 @@ import time
 import types
 import base64
 import shutil
+import pathlib
 import inspect
 import logging
 import functools
@@ -167,14 +168,19 @@ class Path(object):
     def __getattr__(self, attr):
         return getattr(posixpath, attr)
 
+    def lib(self, *args):
+        return self(*args, obj=True)
+
     @classmethod
-    def __call__(cls, *args):
+    def __call__(cls, *args, **kwargs):
         if args:
             value = posixpath.expandvars(
                 posixpath.expanduser(
                     posixpath.join(*args)))
         else:
             value = str()
+        if value and 'obj' in kwargs or 'object' in kwargs:
+            value = pathlib.Path(value)
         return value
 
 
@@ -956,7 +962,8 @@ class Generator(object):
         except AttributeError:
             # get source from files
             modules = [
-                'six', 'docopt', 'ConfigObject', sys.modules[__name__]
+                'six', 'pathlib', 'docopt', 'ConfigObject',
+                sys.modules[__name__]
             ] + list(modules)
             modules = ''.join([self.encode_module(m) for m in modules])
         else:  # pragma: no cover

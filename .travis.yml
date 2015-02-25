@@ -1,13 +1,13 @@
 language: python
-python:
- - "2.6"
- - "2.7"
- - "3.2"
-before_install:
- - "if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then sudo apt-get install python-nose; fi"
 install:
- - pip install webob
- - pip install waitress
- - python setup.py develop
-script: nosetests tests
-
+  - pip install tox coveralls
+script:
+  - tox
+after_success:
+  - coveralls
+env:
+  - TOXENV=py26
+  - TOXENV=py27
+  - TOXENV=py32
+  - TOXENV=py33
+  - TOXENV=py34
