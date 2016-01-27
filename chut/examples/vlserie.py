@@ -32,6 +32,7 @@ def vlserie(args):
 
     Options:
 
+    -s TIME, --start=TIME   Start at (float)
     -l, --latest            Play latest instead of next
     -f, --freeplayer        Play in freeplayer
     --loop                  Loop over episodes
@@ -47,7 +48,11 @@ def vlserie(args):
         options = player_opts.xoptions
     else:
         options = player_opts.fboptions
+    if args['--start']:
+        options += ' --start-time ' + args['--start']
     debug('Using %s player', player)
+
+    pwd = path.abspath('.')
 
     def play(filename, episode):
         filename = path.abspath(filename)
@@ -68,9 +73,9 @@ def vlserie(args):
         else:
             error('Unknown player %r', player)
             sys.exit(1)
-        srts = find('-iregex ".*%s\(x\|E\)%02i.*srt"' % episode, shell=True)
+        srts = find(pwd, '-iregex ".*%s\(x\|E\)%02i.*srt"' % episode,
+                    shell=True)
         for srt in sorted(srts):
-            srt = srt.lstrip('./')
             if '  ' in srt:
                 new = srt.replace('  ', ' ')
                 shutil.move(srt, new)
@@ -79,14 +84,15 @@ def vlserie(args):
                 cmdline += ' --sub-file %r' % srt
             elif player == 'mplayer':
                 cmdline += ' -sub %r' % srt
-        subs = find('-iregex ".*%s\(x\|E\)%02i.*sub"' % episode, shell=True)
+        subs = find(pwd, '-iregex ".*%s\(x\|E\)%02i.*sub"' % episode,
+                    shell=True)
         for sub in sorted(subs):
             if player == 'mplayer':
                 sub = sub.lstrip('./')
                 cmdline += ' -vobsub %r' % sub[:-4]
         cmd = sh[player](cmdline, combine_stderr=True, shell=True)
         info(repr(cmd))
-        serie = config[dirname]
+        serie = config[pwd]
         serie.latest = filename
         config.write()
         try:
@@ -96,7 +102,7 @@ def vlserie(args):
         if not args['--loop']:
             sys.exit(0)
 
-    serie = config[path.abspath('.')]
+    serie = config[pwd]
 
     filenames = find(
         ('. -iregex '
