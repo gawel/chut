@@ -8,6 +8,7 @@ import unittest
 import six
 import os
 
+
 os.environ['TESTING'] = '1'
 
 
@@ -134,9 +135,9 @@ class Chut(unittest.TestCase):
         self.assertEqual(str(sh.cat('tmp')), 'blahblah')
 
     def test_stdin2(self):
-        head = str(sh.stdin(open(self.__file__, 'rb'))
-                   | sh.cat('-')
-                   | sh.head('-n1'))
+        head = str(
+            sh.stdin(open(self.__file__, 'rb')
+                     ) | sh.cat('-') | sh.head('-n1'))
         self.assertTrue(len(head) > 1, head)
         self.assertTrue(len(head) > 2, head)
 

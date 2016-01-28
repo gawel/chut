@@ -18,9 +18,9 @@ Get standalone `%(binary)s <_static/binaries/%(binary)s>`_
 def example(args):
     fd = open('docs/examples.rst', 'w')
     fd.write((
-    '==========================\n'
-    'Examples\n'
-    '==========================\n\n'))
+        '==========================\n'
+        'Examples\n'
+        '==========================\n\n'))
     for filename in sorted(find('chut/examples -name *.py')):
         scripts = list(grep('-A1 -E @.*console_script', filename))
         if not scripts:

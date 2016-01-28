@@ -756,12 +756,14 @@ class ModuleWrapper(types.ModuleType):
         self.chut = chut
 
     def __getattr__(self, attr):
+        if attr == '__wrapped__':
+            raise AttributeError()
         if attr == '__all__':
             if self.__name__ == 'chut':
                 return [str(c) for c in __all__]
             else:  # pragma: no cover
                 raise ImportError('You cant import things that does not exist')
-        if hasattr(self.mod, attr):
+        if getattr(self.mod, attr, None) is not None:
             return getattr(self.mod, attr)
         else:
             return getattr(self.chut, attr)

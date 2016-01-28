@@ -2,3 +2,6 @@ recursive-include main_directory *
 recursive-include docs *
 include *
 global-exclude *.pyc
+global-exclude *.swp
+exclude .cache
+exclude .installed.cfg

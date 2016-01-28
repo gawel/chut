@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from chut import *
 
+
 @console_script
 def github_clone(args):
     """Usage: %prog [<user>]
