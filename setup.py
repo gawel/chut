@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.12.dev0'
+version = '0.12'
 
 setup(name='chut',
       version=version,
