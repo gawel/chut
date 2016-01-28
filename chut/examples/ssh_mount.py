@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from chut import *  # noqa
 
-__version__ = "0.12"
+__version__ = "0.13"
 
 
 @console_script(fmt='msg')
