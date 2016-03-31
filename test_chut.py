@@ -35,10 +35,18 @@ class Chut(unittest.TestCase):
         self.assertEqual(str('<sh>'), repr(sh.sh))
 
     def test_environ(self):
-        env = sh.env(tmp='tmp')
+        env = sh.env.copy(tmp='tmp')
+        print(env.tmp)
         self.assertEqual(env.tmp, 'tmp')
+        self.assertEqual(sh.env.tmp, None)
         del env.tmp
         self.assertEqual(env.tmp, None)
+        with sh.env(tmp="tmp"):
+            self.assertEqual(sh.env.tmp, 'tmp')
+            with sh.env(tmp=None):
+                self.assertEqual(sh.env.tmp, None)
+            self.assertEqual(sh.env.tmp, 'tmp')
+        self.assertEqual(sh.env.tmp, None)
 
     def test_debug(self):
         sh.set_debug(False)

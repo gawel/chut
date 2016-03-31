@@ -156,11 +156,37 @@ class Environ(dict):
         if attr in self:
             del self[attr]
 
-    def __call__(self, **kwargs):
-        environ = self.__class__(self.copy())
-        for k, v in kwargs.items():
-            setattr(environ, k, v)
+    def copy(self, **kwargs):
+        environ = self.__class__(self)
+        environ(**kwargs)
         return environ
+
+    def __call__(self, **kwargs):
+        return ChangeEnviron(self, **kwargs)
+
+
+class ChangeEnviron:
+    """Change the environment and keep a track of the previous one in
+    order to restore it. This is meant to be used in a with statement."""
+
+    def __init__(self, env, **kwargs):
+        self._prevenv = Environ(env)
+        self._env = env
+        for k, v in kwargs.items():
+            if v is None:
+                delattr(self._env, k)
+            else:
+                setattr(self._env, k, v)
+
+    def __enter__(self):
+        return self._env
+
+    def __exit__(self, type, value, traceback):
+        # restore the previous values...
+        self._env.update(self._prevenv)
+        # and suppress the added keys
+        for k in set(self._env.keys()) - set(self._prevenv):
+            del self._env[k]
 
 
 class Path(object):

@@ -84,9 +84,19 @@ Only ``path`` return a list. Other values return a string.
 
 You can also pass a copy to your commands::
 
-  >>> env = sh.env()
+  >>> env = sh.env.copy()
   >>> sh.cat('-', env=env)
   'cat -'
+
+The environment can also be temporarily modified with a "with" statement.
+In this example, "HOME" is modified only inside the "with" block and restored
+at the end::
+
+  >>> with sh.env(HOME="/home/foo"):
+  ...     str(sh.echo("$HOME", sh=True))
+  ... 
+  '/home/foo'
+
 
 The test command
 ================
