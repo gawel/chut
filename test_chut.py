@@ -177,6 +177,12 @@ class Chut(unittest.TestCase):
         self.assertNotEqual(pwd, sh.env.pwd)
         self.assertEqual(sh.pwd(), sh.env.pwd)
         sh.cd(pwd)
+        # test with with
+        with sh.cd('..') as newd:
+            self.assertNotEqual(pwd, sh.env.pwd)
+            self.assertEqual(sh.pwd(), sh.env.pwd)
+            self.assertEqual(newd, sh.env.pwd)
+        self.assertEqual(sh.pwd(), pwd)
 
     def test_console_script(self):
         def f(args):

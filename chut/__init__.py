@@ -676,9 +676,7 @@ class Chut(Base):
 
     def cd(self, directory):
         """Change the current directory"""
-        directory = os.path.realpath(directory)
-        os.chdir(directory)
-        env.pwd = directory
+        return ChangeDir(directory)
 
     def pwd(self):
         """return os.path.abspath(os.getcwd())"""
@@ -689,6 +687,24 @@ class Chut(Base):
 
     def ssh(self, *args):
         return SSH('ssh', *args)
+
+
+class ChangeDir:
+    """Change to a new directory and keep a track of the previous directory in
+    order to restore it. This is meant to be used in a with statement."""
+
+    def __init__(self, dir):
+        self._dir = os.path.realpath(dir)
+        self._prevdir = env.pwd
+        os.chdir(self._dir)
+        env.pwd = self._dir
+
+    def __enter__(self):
+        return self._dir
+
+    def __exit__(self, type, value, traceback):
+        os.chdir(self._prevdir)
+        env.pwd = self._prevdir
 
 
 class Command(Base):
