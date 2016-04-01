@@ -56,7 +56,7 @@ You can define some aliases::
   >>> print(repr(sh.ll('.')))
   '/usr/local/bin/ls -l .'
   >>> print(repr(sh.python('-c "import sys"')))
-  '/opt/python3/bin/python3 -c "import sys"'
+  "/opt/python3/bin/python3 -c 'import sys'"
 
 Environ
 =======
