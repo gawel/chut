@@ -307,15 +307,19 @@ class Pipe(object):
         if self._cmd_args[:1] == ['ssh']:
             cmd = '%s %s' % (binary, ' '.join(self.args))
             cmd = cmd.strip()
-            for c in '\'"*<>|':
-                if c in cmd:
-                    cmd = repr(str(cmd))
-                    break
+            if shell and any(i in cmd for i in '\'"*<>|& '):
+                cmd = repr(str(cmd))
             args.append(cmd)
         else:
+            import shlex
             args.extend(binary.split())
             for a in self.args:
-                args.extend(a.split())
+                if isinstance(a, (list, tuple)):
+                    args.extend(a)
+                elif shell:
+                    args.append(a)
+                else:
+                    args.extend(shlex.split(str(a)))
 
         args = [a for a in args if a]
 
@@ -331,8 +335,16 @@ class Pipe(object):
                 s = 'stdin'
             elif isinstance(cmd, PyPipe):
                 s = '%s()' % cmd.__class__.__name__
-            else:
+            elif cmd.kwargs.get("shell"):
                 s = cmd.command_line(shell=True)
+            else:
+                args = []
+                for arg in cmd.command_line():
+                    if any(i in arg for i in '\'"*<>|& '):
+                        args.append(repr(str(arg)))
+                    else:
+                        args.append(arg)
+                s = " ".join(args)
             cmds.append(s.strip())
         return str(' | '.join(cmds))
 

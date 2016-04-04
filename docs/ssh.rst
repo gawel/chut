@@ -8,7 +8,7 @@ The ssh command take a host first and is gziped by default::
     >>> from chut import ssh
     >>> srv1 = ssh('gawel@srv')
     >>> srv1.ls('~')
-    'ssh gawel@srv ls ~'
+    "ssh gawel@srv 'ls ~'"
 
 For example you can backup your mysql database locally::
 
@@ -24,6 +24,6 @@ Or on another server::
 You can use your ssh instance to get some remote file::
 
     >>> sh.rsync(srv1.join('~/p0rn'), '.', pipe=True)
-    'rsync gawel@srv:"~/p0rn" .'
+    'rsync gawel@srv:~/p0rn .'
 
 
