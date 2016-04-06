@@ -473,6 +473,8 @@ class Pipe(object):
         eol = six.PY3 and '\n' or b'\n'
         for line in self.stdout:
             yield self._decode(line).rstrip(eol)
+        if self.failed:
+            self._raise(output=self._get_stdout(''))
 
     def __call__(self, **kwargs):
         if self._done and self._stdout is not None:
@@ -498,7 +500,11 @@ class Pipe(object):
             self._stdout = output
         return output
 
-    __str__ = __call__
+    def __str__(self):
+        output = self.__call__()
+        if self.failed:
+            self._raise(output=output)
+        return output
 
     def __gt__(self, filename):
         return self._write(filename, 'wb+')
