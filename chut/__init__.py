@@ -982,6 +982,7 @@ class console_script(object):
     def __call__(self, *args, **kwargs):
         return self.main(*args, **kwargs) if self.func else self.wraps(args)
 
+
 Chut.console_script = console_script
 
 
@@ -1191,6 +1192,7 @@ class Fab(object):
         """Upload a script and run it using sudo. ``*args`` are used as command
         line arguments. ``**kwargs`` are passed to `fabric`'s `sudo`"""
         return self._run('sudo', script, *args, **kwargs)
+
 
 fab = Fab()
 
