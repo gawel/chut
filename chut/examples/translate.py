@@ -5,7 +5,7 @@ import six
 import sys
 import os
 
-__version__ = "0.13"
+__version__ = "0.17"
 
 __doc__ = """
 Usage: %prog [options] [-] [<text>...]
