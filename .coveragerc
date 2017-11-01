@@ -1,0 +1,21 @@
+[run]
+include =
+    */chut/*.py
+omit =
+    conftest.py
+    .tox/*
+    tests/*
+    docs/conf.py
+    */examples/*
+    */site-packages*
+    */lib/python*
+    */lib-python*
+    */lib_pypy*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    def parse_args
