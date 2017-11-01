@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 from chut.recipe import Recipe
 from chut.scripts import chutify
-from six.moves import StringIO
+from io import StringIO
 import chut as sh
 import unittest
-import six
 import os
 
 
@@ -22,7 +21,7 @@ class Chut(unittest.TestCase):
         self.assertTrue(len(sh.rm('/chut').stderr) >= 0)
 
     def test_repr(self):
-        self.assertEqual(repr(sh.stdin(six.b('')) | sh.cat('-')),
+        self.assertEqual(repr(sh.stdin(b'') | sh.cat('-')),
                          repr(str('stdin | cat -')))
 
         @sh.wraps
@@ -63,12 +62,8 @@ class Chut(unittest.TestCase):
     def test_iter_stdin(self):
         self.assertTrue(isinstance(sh.stdin(b'blah').iter_stdout, int))
         self.assertTrue(isinstance(sh.stdin('blah').iter_stdout, int))
-        if six.PY3:
-            self.assertTrue(isinstance(sh.stdin(StringIO('')).iter_stdout,
-                            StringIO))
-        else:
-            self.assertTrue(isinstance(sh.stdin(StringIO('')).iter_stdout,
-                            int))
+        self.assertTrue(isinstance(sh.stdin(StringIO('')).iter_stdout,
+                        StringIO))
         with open(__file__, 'rb') as fd:
             self.assertEqual(sh.stdin(fd).iter_stdout, fd)
 
@@ -111,7 +106,7 @@ class Chut(unittest.TestCase):
 
     def test_stdin(self):
         content = open(__file__).read().strip()
-        if not isinstance(content, six.binary_type):
+        if not isinstance(content, bytes):
             bcontent = content.encode('utf-8')
         else:
             bcontent = content
@@ -159,13 +154,13 @@ class Chut(unittest.TestCase):
         self.assertRaises(OSError, sh.check_sudo)
         sh.env.path = old_path
 
-        sh.stdin(six.b('#!/bin/bash\necho root')) > 'sudo'
+        sh.stdin(b'#!/bin/bash\necho root') > 'sudo'
         self.assertEqual(sh.chmod('+x sudo').succeeded, True)
         self.assertEqual(sh.check_sudo(), None)
 
         self.assertTrue(len(list(sh.sudo.ls('.'))) > 0)
 
-        sh.stdin(six.b('#!/bin/bash\necho gawel')) > 'sudo'
+        sh.stdin(b'#!/bin/bash\necho gawel') > 'sudo'
         self.assertRaises(OSError, sh.check_sudo)
 
     def test_ssh(self):

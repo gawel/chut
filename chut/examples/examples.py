@@ -22,7 +22,10 @@ def example(args):
         'Examples\n'
         '==========================\n\n'))
     for filename in sorted(find('chut/examples -name *.py')):
-        scripts = list(grep('-A1 -E @.*console_script', filename))
+        try:
+            scripts = list(grep('-A1 -E @.*console_script', filename))
+        except OSError:
+            continue
         if not scripts:
             continue
         filename = path.basename(filename)

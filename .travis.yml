@@ -1,16 +1,13 @@
-language: python
-python: 3.5
 sudo: false
+language: python
+python:
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.6"
 install:
-  - pip install tox coveralls
+  - pip install tox-travis coveralls
 script:
   - tox
 after_success:
   - coveralls
-env:
-  - TOXENV=py26
-  - TOXENV=py27
-  - TOXENV=py33
-  - TOXENV=py34
-  - TOXENV=py35
-  - TOXENV=flake8

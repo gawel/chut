@@ -2,7 +2,6 @@ from __future__ import unicode_literals, print_function
 import os
 import re
 import sys
-import six
 import stat
 import zlib
 import time
@@ -114,14 +113,14 @@ def check_sudo():
     whoami = Popen(args, env=env, **kwargs)
     whoami.wait()
     whoami = whoami.stdout.read().strip()
-    if whoami != six.b('root'):
+    if whoami != b'root':
         raise OSError('Not able to run sudo.')
 
 
 def escape(value):
     chars = "|!`'[]() "
     esc = '\\'
-    if isinstance(value, six.binary_type):
+    if isinstance(value, bytes):
         chars = chars.encode('ascii')
         esc = esc.encode('ascii')
     for c in chars:
@@ -280,7 +279,7 @@ class Pipe(object):
         if self._stderr is None:
             stderr = [p.stderr.read() for p in self.processes if p.stderr]
             output = b'\n'.join(stderr).strip()
-            if not isinstance(output, six.text_type):
+            if not isinstance(output, str):
                 output = output.decode(self.encoding, 'ignore')
             self._stderr = output
         return self._stderr
@@ -470,7 +469,7 @@ class Pipe(object):
         return self._order(cmds)[-1]
 
     def __iter__(self):
-        eol = six.PY3 and '\n' or b'\n'
+        eol = '\n'
         for line in self.stdout:
             yield self._decode(line).rstrip(eol)
         if self.failed:
@@ -568,12 +567,12 @@ class Pipe(object):
         return output
 
     def _decode(self, output):
-        if six.PY3 and not isinstance(output, six.text_type):
+        if not isinstance(output, str):
             output = output.decode(self.encoding)
         return output
 
     def _get_stdout(self, stdout):
-        if not six.PY3 and not isinstance(stdout, six.binary_type):
+        if not isinstance(stdout, str):
             stdout = stdout.encode(self.encoding)
         output = Stdout(stdout)
         output.stderr = self.stderr
@@ -613,8 +612,8 @@ class Stdin(Pipe):
             if hasattr(self.value, 'read'):
                 value = self.value.read()
             else:
-                if not isinstance(self.value, six.binary_type):
-                    value = six.b(self.value)
+                if not isinstance(self.value, bytes):
+                    value = self.value.encode('ascii')
                 else:
                     value = self.value
             r, w = os.pipe()
@@ -773,7 +772,7 @@ class SSH(Base):
         p = posixpath.join(*args)
         host = str(self)
         quote = '"'
-        if isinstance(p, six.binary_type):
+        if isinstance(p, bytes):
             host = host.encode('ascii')
             quote = quote.encode('ascii')
         return host + quote + escape(p) + quote
@@ -937,9 +936,9 @@ class console_script(object):
             doc = doc.replace('%prog', name).strip()
             if '%options' in doc:
                 def options(match):
-                    l = match.groups()[-1]
-                    if l is not None:
-                        fmt = '{0:<%s}{1}\n' % l.strip('-s')
+                    ll = match.groups()[-1]
+                    if ll is not None:
+                        fmt = '{0:<%s}{1}\n' % ll.strip('-s')
                     else:
                         fmt = '{0:<20}{1}\n'
                     opts = ''
@@ -1003,7 +1002,7 @@ class Generator(object):
         sh.mkdir('-p', dest)
         self.dest = dest
         args.update(version=repr(str(args.get('--version') or 'unknown')),
-                    interpreter=args.get('--interpreter', 'python'))
+                    interpreter=args.get('--interpreter', 'python3'))
         self.args = args
         self.mods = self.encode_modules(*args.get('modules', []))
 
@@ -1013,7 +1012,7 @@ class Generator(object):
         name = str(mod.__name__)
         if name not in self._modules:
             data = inspect.getsource(mod)
-            data = base64.encodestring(zlib.compress(six.b(data)))
+            data = base64.encodestring(zlib.compress(data.encode('utf8')))
             code = '_chut_modules.append((%r, %r))\n' % (name, data)
             self._modules[name] = code
         return self._modules[name]
@@ -1172,14 +1171,14 @@ class Fab(object):
 
     def chutifab(self, *args):
         """Generate chut scripts contained in location"""
-        l = logging.getLogger(posixpath.basename(sys.argv[0]))
-        level = l.level
-        l.setLevel(logging.WARN)
+        ll = logging.getLogger(posixpath.basename(sys.argv[0]))
+        level = ll.level
+        ll.setLevel(logging.WARN)
         if not args:
             args = ['.']
         for location in args:
             Generator(destination='.chutifab')(location)
-        l.setLevel(level)
+        ll.setLevel(level)
         self.scripts = sorted(sh.ls('.chutifab'))
         return self.scripts
 
