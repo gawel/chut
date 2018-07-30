@@ -3,5 +3,5 @@ recursive-include docs *
 include *
 global-exclude *.pyc
 global-exclude *.swp
-exclude .cache
+exclude .cache .coverage
 exclude .installed.cfg
