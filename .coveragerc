@@ -1,6 +1,4 @@
 [run]
-include =
-    */chut/*.py
 omit =
     conftest.py
     .tox/*

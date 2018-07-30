@@ -94,7 +94,7 @@ at the end::
 
   >>> with sh.env(HOME="/home/foo"):
   ...     str(sh.echo("$HOME", sh=True))
-  ... 
+  ...
   '/home/foo'
 
 
@@ -122,17 +122,14 @@ Chut provide logging facility::
     >>> import sys
     >>> log = sh.logopts(fmt='brief', stream=sys.stdout)
     >>> log.info('info message')
-    [INFO] info message
 
 
 When logging is configured you can use those simple functions::
 
     >>> from chut import debug, info, error
     >>> info('info message')
-    [INFO] info message
     >>> debug('debug message')
     >>> error('error message')
-    [ERROR] error message
 
 Notice that if you use ``%options`` in a ``console_script`` docstring then you
 don't need to use ``logopts``. The decorator will do the job for you.
