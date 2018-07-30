@@ -1122,9 +1122,10 @@ for name, code in _chut_modules:
     if PY3:
         if isinstance(code, str):
             code = code.encode('utf-8')
+        code = zlib.decompress(base64.decodebytes(code))
     else:
         name = bytes(name)
-    code = zlib.decompress(base64.decodestring(code))
+        code = zlib.decompress(base64.decodestring(code))
     mod = types.ModuleType(name)
     globs = dict()
     if PY3:
