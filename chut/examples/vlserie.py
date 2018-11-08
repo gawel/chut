@@ -4,7 +4,7 @@ import shutil
 import sys
 import re
 
-__version__ = "0.17"
+__version__ = "0.18"
 
 _episode = re.compile(
     r'[^0-9]+(?P<s>[0-9]+)\s*(x|e|episode)\s*(?P<e>[0-9]+)[^0-9]+')
@@ -73,7 +73,7 @@ def vlserie(args):
         else:
             error('Unknown player %r', player)
             sys.exit(1)
-        srts = find(pwd, '-iregex ".*%s\(x\|E\)%02i.*srt"' % episode,
+        srts = find(e(pwd), '-iregex ".*%s\(x\|E\)%02i.*srt"' % episode,
                     shell=True)
         for srt in sorted(srts):
             if '  ' in srt:
@@ -84,7 +84,7 @@ def vlserie(args):
                 cmdline += ' --sub-file %r' % srt
             elif player == 'mplayer':
                 cmdline += ' -sub %r' % srt
-        subs = find(pwd, '-iregex ".*%s\(x\|E\)%02i.*sub"' % episode,
+        subs = find(e(pwd), '-iregex ".*%s\(x\|E\)%02i.*sub"' % episode,
                     shell=True)
         for sub in sorted(subs):
             if player == 'mplayer':
