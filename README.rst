@@ -6,7 +6,7 @@ Basically it will help to write some shell script in python
 
 This is more like a toy than a real tool but... It may be useful sometimes.
 
-It's `tested <https://travis-ci.org/gawel/chut>`_ with py2.6+ and py3.2+:
+It's `tested <https://travis-ci.org/gawel/chut>`_ with and py3.5+:
 
 .. image:: https://secure.travis-ci.org/gawel/chut.png
 

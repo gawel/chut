@@ -1012,7 +1012,7 @@ class Generator(object):
         name = str(mod.__name__)
         if name not in self._modules:
             data = inspect.getsource(mod)
-            data = base64.encodestring(zlib.compress(data.encode('utf8')))
+            data = base64.encodebytes(zlib.compress(data.encode('utf8')))
             code = '_chut_modules.append((%r, %r))\n' % (name, data)
             self._modules[name] = code
         return self._modules[name]
@@ -1024,7 +1024,7 @@ class Generator(object):
         except AttributeError:
             # get source from files
             modules = [
-                'six', 'pathlib', 'docopt', 'ConfigObject',
+                'docopt', 'ConfigObject',
                 sys.modules[__name__]
             ] + list(modules)
             modules = ''.join([self.encode_module(m) for m in modules])
@@ -1113,27 +1113,19 @@ version = %(version)s
 
 import base64, json, types, zlib, sys, os
 os.environ['CHUTIFIED'] = '1'
-PY3 = sys.version_info[0] == 3
 _chut_modules = []
 '''.lstrip()
 
 LOAD_MODULES = '''
 for name, code in _chut_modules:
-    if PY3:
-        if isinstance(code, str):
-            code = code.encode('utf-8')
-        code = zlib.decompress(base64.decodebytes(code))
-    else:
-        name = bytes(name)
-        code = zlib.decompress(base64.decodestring(code))
+    if isinstance(code, str):
+        code = code.encode('utf-8')
+    code = zlib.decompress(base64.decodebytes(code))
     mod = types.ModuleType(name)
     globs = dict()
-    if PY3:
-        if isinstance(code, bytes):
-            code = code.decode('utf-8')
-        exec(code, globs)
-    else:
-        exec('exec code in globs')
+    if isinstance(code, bytes):
+        code = code.decode('utf-8')
+    exec(code, globs)
     mod.__dict__.update(globs)
     if name == 'chut':
         mod.wraps_module(mod)

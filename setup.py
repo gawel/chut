@@ -21,7 +21,7 @@ setup(name='chut',
       packages=find_packages(exclude=['docs', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      install_requires=['six', 'pathlib', 'docopt', 'ConfigObject'],
+      install_requires=['docopt', 'ConfigObject'],
       entry_points="""
       [console_scripts]
       chutify = chut.scripts:chutify
